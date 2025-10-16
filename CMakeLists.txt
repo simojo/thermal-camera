@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.13...3.27)
+
+# initialize pico-sdk from submodule
+# note: this must happen before project()
+include(pico-sdk/pico_sdk_init.cmake)
+
+set(PICO_BOARD pico_w)
+
+project(thermal-camera)
+
+# initialize the Raspberry Pi Pico SDK
+pico_sdk_init()
+
+add_subdirectory(lib/mlx90640)
+
+add_executable(thermal-camera
+  src/main.c
+)
+
+target_include_directories(thermal-camera PUBLIC
+  "${CMAKE_CURRENT_LIST_DIR}/include"
+)
+
+target_link_libraries(thermal-camera
+  pico_stdlib
+  hardware_spi
+  hardware_clocks
+  hardware_pio
+  hardware_i2c
+  mlx90640
+)
+
+pico_enable_stdio_usb(thermal-camera 0)
+pico_enable_stdio_uart(thermal-camera 1)
+
+pico_add_extra_outputs(thermal-camera)
