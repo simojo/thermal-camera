@@ -23,6 +23,7 @@
         bear
         usbutils
         python3
+        pulseview
       ];
       shellHook = ''
         echo -e '\033[1;33m
