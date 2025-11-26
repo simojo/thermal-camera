@@ -51,9 +51,8 @@ void printEEPROM() {
       if ((i + 1) % 16 == 0) {
         ending = '\n';
       }
-      // rp2040 is little-endian, so LSB comes first in sequence
-      uint8_t HSB = (eeData[i] >> 0) & 0xFF;
-      uint8_t LSB = (eeData[i] >> 8) & 0xFF;
+      uint8_t HSB = (eeData[i] >> 8) & 0xFF;
+      uint8_t LSB = (eeData[i] >> 0) & 0xFF;
       printf("%02X %02X%c", HSB, LSB, ending);
     }
   } else {
@@ -145,9 +144,7 @@ int main() {
         }
       }
     } else {
-#ifdef DEBUG
-      printf("MLX90640 failed while getting frame data.\n");
-#endif
+      printf("MLX90640 failed while getting frame data (%d).\n", subpage);
     }
   }
 }

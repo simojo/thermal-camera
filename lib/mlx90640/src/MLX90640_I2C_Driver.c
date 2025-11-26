@@ -150,12 +150,8 @@ uint _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool n
     ack = 1;
     for (int j = 0; j < 8; j++) {
       sclh();
-      *p |= sda_read();
+      *p = (*p << 1) | sda_read();
       scll();
-      // only shift if we're before the last byte
-      if (j != 7) {
-        *p <<= 1;
-      }
     }
     sdal();
     sleep_us(5);
