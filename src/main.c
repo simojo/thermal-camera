@@ -4,6 +4,7 @@
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
 #include "mlx90640/MLX90640_API.h"
+#include "mlx90640/MLX90640_I2C_Driver.h"
 #include "scanner.h"
 
 #define MLX90640_ADDR 0x33

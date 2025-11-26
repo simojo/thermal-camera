@@ -9,8 +9,9 @@
 #include "hardware/i2c.h"
 #include "pico/binary_info.h"
 #include "pico/stdlib.h"
+#include "hardware/gpio.h"
 
-#define I2C_BAUD 100 * 1000
+#define I2C_BAUD 400 * 1000
 #define MAX_RETRIES 5
 
 bool init = 0;
@@ -18,20 +19,170 @@ bool init = 0;
 void MLX90640_I2CInit() {
 }
 
+static inline void sclh(void) {
+  gpio_init(PICO_DEFAULT_I2C_SCL_PIN);
+  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_IN);
+}
+
+static inline void scll(void) {
+  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_OUT);
+  gpio_put(PICO_DEFAULT_I2C_SCL_PIN, 0);
+}
+
+static inline uint8_t sda_read(void) {
+  return (uint8_t)gpio_get(PICO_DEFAULT_I2C_SDA_PIN);
+}
+
+static inline void sdah(void) {
+  gpio_init(PICO_DEFAULT_I2C_SDA_PIN);
+  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_IN);
+}
+
+static inline void sdal(void) {
+  gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_SIO);
+  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_OUT);
+  gpio_put(PICO_DEFAULT_I2C_SDA_PIN, 0);
+}
+
+uint _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
+  // start condition
+  sclh();
+  sdal();
+  scll();
+
+  uint8_t ack = 1;
+
+  uint8_t addr_byte_msk = 0x80;
+  for (int j = 0; j < 8; j++) {
+    if (j == 7) {
+      sdal(); // write low
+      sclh();
+      scll();
+      break;
+    }
+    (slaveAddr << 1) & addr_byte_msk ? sdah() : sdal();
+    sclh();
+    addr_byte_msk >>= 1;
+    scll();
+  }
+  sdah();
+  sclh();
+  ack = sda_read();
+  scll();
+  if (ack == 1) {
+    // stop condition
+    sdal();
+    sclh();
+    sdah();
+    return -1;
+  }
+
+  uint8_t *p = buf;
+  for (int i = 0; i < nbytes; i++) {
+    ack = 1;
+    uint8_t byte_msk = 0x80;
+    for (int j = 0; j < 8; j++) {
+      *p & byte_msk ? sdah() : sdal();
+      sclh();
+      byte_msk >>= 1;
+      scll();
+    }
+    sdah();
+    sclh();
+    ack = sda_read();
+    scll();
+    if (ack == 0) {
+      p++;
+      continue;
+    } else {
+      // stop condition
+      sdal();
+      sclh();
+      sdah();
+      return -1;
+    }
+  }
+  if (!nostop) {
+    // stop condition
+    sdal();
+    sclh();
+    sdah();
+  }
+  return 0;
+}
+
+uint _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
+  // start condition
+  sclh();
+  sdal();
+  scll();
+
+  uint8_t ack = 1;
+
+  uint8_t addr_byte_msk = 0x80;
+  for (int j = 0; j < 8; j++) {
+    if (j == 7) {
+      sdah(); // read high
+      sclh();
+      scll();
+      break;
+    }
+    (slaveAddr << 1) & addr_byte_msk ? sdah() : sdal();
+    sclh();
+    addr_byte_msk >>= 1;
+    scll();
+  }
+  sdah();
+  sclh();
+  ack = sda_read();
+  scll();
+  if (ack == 1) {
+    // stop condition
+    sdal();
+    sclh();
+    sdah();
+    return -1;
+  }
+
+
+  uint8_t *p = buf;
+  for (int i = 0; i < nbytes; i++) {
+    ack = 1;
+    for (int j = 0; j < 8; j++) {
+      sclh();
+      *p |= sda_read();
+      scll();
+      // only shift if we're before the last byte
+      if (j != 7) {
+        *p <<= 1;
+      }
+    }
+    sdal();
+    sleep_us(5);
+    sclh();
+    p++;
+    scll();
+    sdah();
+  }
+  if (!nostop) {
+    // stop condition
+    sdal();
+    sclh();
+    sdah();
+  }
+  return 0;
+}
+
 int MLX90640_I2CGeneralReset() {
-  i2c_deinit(i2c_default);
-  i2c_init(i2c_default, I2C_BAUD);
   return 0;
 }
 
 static inline void _i2c_init(void) {
   i2c_init(i2c_default, I2C_BAUD);
-  gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-  gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
-  gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
-  gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
-  // Make the I2C pins available to picotool
-  bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
+  gpio_init(PICO_DEFAULT_I2C_SDA_PIN);
+  gpio_init(PICO_DEFAULT_I2C_SCL_PIN);
+  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_IN);
+  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_IN);
   init = true;
 }
 
@@ -42,52 +193,17 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
     uint8_t buf[1664];
     uint8_t cmd[2] = {0, 0};
-
     cmd[0] = startAddress >> 8;
     cmd[1] = startAddress & 0x00FF;
 
     uint16_t *p = data;
 
     int error;
-    // NOTE: timeout is divided by number of bytes to write/read
-    uint write_timeout_us = 1000 * 2;
-    uint read_timeout_us = 1000 * 2 * nMemAddressRead;
 
-    for (int i = 0; i <= MAX_RETRIES; i++) {
-      if (i == MAX_RETRIES) {
-        return -1;
-      }
-      // error = i2c_write_timeout_us(i2c_default, slaveAddr, cmd, 2, 1, write_timeout_us);
-      error = i2c_write_blocking(i2c_default, slaveAddr, cmd, 2, 1);
-      if (error == PICO_ERROR_TIMEOUT) {
-#ifdef DEBUG
-        printf("Error: I2C bus stuck - resetting.\n");
-#endif
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      } else if (error < 0) {
-        printf("[ERROR] I2CRead0: %d\n", error);
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      }
-      // error = i2c_read_timeout_us(i2c_default, slaveAddr, buf, 2*nMemAddressRead, 0, read_timeout_us);
-      error = i2c_read_blocking(i2c_default, slaveAddr, buf, 2*nMemAddressRead, 0);
-      if (error == PICO_ERROR_TIMEOUT) {
-#ifdef DEBUG
-        printf("Error: I2C bus stuck - resetting.\n");
-#endif
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      } else if (error < 0) {
-        printf("[ERROR] I2CRead1: %d\n", error);
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      }
-      break;
+    error |= _i2c_write_blocking(slaveAddr, cmd, 2, 1);
+    error |= _i2c_read_blocking(slaveAddr, buf, 2*nMemAddressRead, 0);
+    if (error != 0) {
+      return error;
     }
 
     for (int count = 0; count < nMemAddressRead; count++) {
@@ -112,25 +228,6 @@ int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
     // NOTE: timeout is divided by number of bytes to write/read
     uint write_timeout_us = 1000 * 4;
 
-    for (int i = 0; i <= MAX_RETRIES; i++) {
-      if (i == MAX_RETRIES) {
-        return -1;
-      }
-      error = i2c_write_timeout_us(i2c_default, slaveAddr, cmd, 4, 0, write_timeout_us);
-      if (error == PICO_ERROR_TIMEOUT) {
-#ifdef DEBUG
-        printf("Error: I2C bus stuck - resetting.\n");
-#endif
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      } else if (error < 0) {
-        printf("[ERROR] I2CWrite0: %d\n", error);
-        i2c_deinit(i2c_default);
-        i2c_init(i2c_default, I2C_BAUD);
-        continue;
-      }
-      break;
-    }
-    return 0;
+    error |= _i2c_write_blocking(slaveAddr, cmd, 4, 0);
+    return error;
 }
