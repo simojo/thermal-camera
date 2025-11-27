@@ -5,10 +5,9 @@
 #include "pico/stdlib.h"
 #include "mlx90640/MLX90640_API.h"
 #include "mlx90640/MLX90640_I2C_Driver.h"
-#include "scanner.h"
+#include "st7789.h"
 
 #define MLX90640_ADDR 0x33
-#define MLX90640_PIXEL_COUNT 768
 
 const char *heatmap_ascii = " .:-=+*#%@";
 const char *heatmap_color[] = {
@@ -61,11 +60,21 @@ void printEEPROM() {
 }
 
 paramsMLX90640 mlx90640;
-static float frameTemperature[MLX90640_PIXEL_COUNT];
-static uint16_t frameData[MLX90640_PIXEL_COUNT + 64 + 2];
+static float frameTemperature[MLX90640_PIXEL_NUM];
+static uint16_t frameData[MLX90640_PIXEL_NUM + 64 + 2];
 
 int main() {
   stdio_init_all();
+
+  st7789_init();
+  printf("Ready to update screen...\n");
+  getchar();
+  st7789_fill_rect(0, 0, 319, 239, BLACK);
+  st7789_fill_rect(0, 0, 319/2, 239/2, BLUE);
+  st7789_fill_rect(319/2, 0, 319, 10, RED);
+  st7789_fill_rect(319/2, 10, 319, 19, WHITE);
+  st7789_fill_rect(319/2, 0, 319, 20, RED);
+  st7789_fill_rect(319/2, 20, 319, 29, WHITE);
 
   for (int i = 0; i < 3; i++) {
     printf("\rO o o o");
@@ -129,12 +138,12 @@ int main() {
       float max = -INFINITY;
       float min = INFINITY;
       // get max, min value in frame data
-      for (int i = 0; i < MLX90640_PIXEL_COUNT; i++) {
+      for (int i = 0; i < MLX90640_PIXEL_NUM; i++) {
         if (frameTemperature[i] > max) max = frameTemperature[i];
         if (frameTemperature[i] < min) min = frameTemperature[i];
       }
       float delta = max - min > 0 ? max - min : 1;
-      for (int i = 0; i < MLX90640_PIXEL_COUNT; i += 1) {
+      for (int i = 0; i < MLX90640_PIXEL_NUM; i += 1) {
         uint8_t heatmap_index = (uint8_t)((frameTemperature[i] - min)/delta * 10.0f);
         if (heatmap_index < 0) heatmap_index = 0;
         if (heatmap_index > 9) heatmap_index = 9;

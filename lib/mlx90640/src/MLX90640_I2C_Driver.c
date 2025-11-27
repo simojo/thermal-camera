@@ -12,39 +12,40 @@
 #include "hardware/gpio.h"
 
 #define I2C_BAUD 400 * 1000
-#define MAX_RETRIES 5
 
 bool init = 0;
+
+#define SDA 4
+#define SCL 5
 
 void MLX90640_I2CInit() {
 }
 
 static inline void sclh(void) {
-  gpio_init(PICO_DEFAULT_I2C_SCL_PIN);
-  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_IN);
+  gpio_init(SCL);
+  gpio_set_dir(SCL, GPIO_IN);
 }
 
 static inline void scll(void) {
-  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_OUT);
-  gpio_put(PICO_DEFAULT_I2C_SCL_PIN, 0);
+  gpio_set_dir(SCL, GPIO_OUT);
+  gpio_put(SCL, 0);
 }
 
 static inline uint8_t sda_read(void) {
-  return (uint8_t)gpio_get(PICO_DEFAULT_I2C_SDA_PIN);
+  return (uint8_t)gpio_get(SDA);
 }
 
 static inline void sdah(void) {
-  gpio_init(PICO_DEFAULT_I2C_SDA_PIN);
-  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_IN);
+  gpio_init(SDA);
+  gpio_set_dir(SDA, GPIO_IN);
 }
 
 static inline void sdal(void) {
-  gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_SIO);
-  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_OUT);
-  gpio_put(PICO_DEFAULT_I2C_SDA_PIN, 0);
+  gpio_set_dir(SDA, GPIO_OUT);
+  gpio_put(SDA, 0);
 }
 
-uint _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
+int _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
   // start condition
   sclh();
   sdal();
@@ -52,7 +53,8 @@ uint _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool 
 
   uint8_t ack = 1;
 
-  uint8_t addr_byte_msk = 0x80;
+  // slaveAddr is 7 bits, so we shift by 1 to start at 7th bit
+  uint8_t addr_byte_msk = 0x80 >> 1;
   for (int j = 0; j < 8; j++) {
     if (j == 7) {
       sdal(); // write low
@@ -60,7 +62,7 @@ uint _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool 
       scll();
       break;
     }
-    (slaveAddr << 1) & addr_byte_msk ? sdah() : sdal();
+    slaveAddr & addr_byte_msk ? sdah() : sdal();
     sclh();
     addr_byte_msk >>= 1;
     scll();
@@ -111,7 +113,7 @@ uint _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool 
   return 0;
 }
 
-uint _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
+int _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool nostop) {
   // start condition
   sclh();
   sdal();
@@ -174,12 +176,11 @@ int MLX90640_I2CGeneralReset() {
 }
 
 static inline void _i2c_init(void) {
-  i2c_init(i2c_default, I2C_BAUD);
-  gpio_init(PICO_DEFAULT_I2C_SDA_PIN);
-  gpio_init(PICO_DEFAULT_I2C_SCL_PIN);
-  gpio_set_dir(PICO_DEFAULT_I2C_SDA_PIN, GPIO_IN);
-  gpio_set_dir(PICO_DEFAULT_I2C_SCL_PIN, GPIO_IN);
   init = true;
+  gpio_init(SDA);
+  gpio_init(SCL);
+  gpio_set_dir(SDA, GPIO_IN);
+  gpio_set_dir(SCL, GPIO_IN);
 }
 
 int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddressRead, uint16_t *data) {
@@ -194,7 +195,7 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
     uint16_t *p = data;
 
-    int error;
+    int error = 0;
 
     error |= _i2c_write_blocking(slaveAddr, cmd, 2, 1);
     error |= _i2c_read_blocking(slaveAddr, buf, 2*nMemAddressRead, 0);
@@ -220,7 +221,7 @@ int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
     cmd[2] = data >> 8;
     cmd[3] = data & 0x00FF;
 
-    int error;
+    int error = 0;
     // NOTE: timeout is divided by number of bytes to write/read
     uint write_timeout_us = 1000 * 4;
 

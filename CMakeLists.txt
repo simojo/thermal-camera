@@ -17,6 +17,7 @@ add_subdirectory(lib/mlx90640)
 
 add_executable(thermal-camera
   src/main.c
+  src/st7789.c
 )
 
 target_include_directories(thermal-camera PUBLIC
