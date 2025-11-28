@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "hardware/spi.h"
 #include "pico/stdlib.h"
@@ -170,6 +171,24 @@ void st7789_write_data(uint8_t *buf, uint len) {
   st7789_unselect();
 }
 
+/*
+ * st7789_write_data_words
+ *
+ * @brief Mutate buffer into big-endian and send to st7789_write_data.
+ * @warn This will mutate the buffer you give it.
+ */
+void st7789_write_data_words(uint16_t *buf, uint len) {
+  size_t newlen = len * 2;
+
+  // shift word-sized buffer around to be big-endian
+  for (int i = 0; i < len; i++) {
+    uint16_t temp = buf[i];
+    buf[i] = (temp >> 8) | (temp << 8); // HSB -> LSB order
+  }
+  // cast buffer as uint8_t* after we shift its endianness
+  st7789_write_data((uint8_t*)buf, newlen);
+}
+
 void st7789_write_data_byte(uint8_t b) {
   st7789_write_data(&b, 1);
 }
@@ -216,8 +235,40 @@ void st7789_draw_pixel(uint x, uint y, uint16_t color) {
   st7789_write_data(data, 2);
 }
 
+/*
+ * st7789_draw_line
+ *
+ * @brief Draw a line on using Bresenham's line algorithm.
+ */
 void st7789_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
-  // FIXME
+  // use Bresenham's line algorithm (source: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
+
+  int dx = abs((int)x1 - (int)x0);
+  // direction of x
+  int dirx = x0 < x1 ? 1 : -1;
+  int dy = -abs((int)y1 - (int)y0);
+  // direction of x
+  int diry = y0 < y1 ? 1 : -1;
+  int e = dx + dy;
+
+  // modify x0,y0 directly because we passed by value
+  while (1) {
+    st7789_draw_pixel(x0, y0, color);
+
+    if (x0 == x1 && y0 == y1) {
+      break;
+    }
+
+    int e2 = 2 * e;
+    if (e2 >= dy) {
+      e += dy;
+      x0 += dirx;
+    }
+    if (e2 <= dx) {
+      e += dx;
+      y0 += diry;
+    }
+  }
 }
 
 void st7789_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
@@ -240,8 +291,42 @@ void st7789_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
   free(buf);
 }
 
+// define the number of regions to keep track of frame changes as the
+// same as how many pixels the mlx90640 has
+// x,y refers to how many subdivisions we make of the frame
+#define N_SCREEN_REGIONS_X 16
+#define N_SCREEN_REGIONS_Y 12
+#define SCREEN_REGIONS_NUM N_SCREEN_REGIONS_X * N_SCREEN_REGIONS_Y
+// define scaling factors to help our binning of frame segments
+static const float screen_region_xi_scale = (float)N_SCREEN_REGIONS_X / MLX90640_LINE_SIZE;
+static const float screen_region_yi_scale = (float)N_SCREEN_REGIONS_Y / MLX90640_COLUMN_SIZE;
+// define number of st7789 pixels in each frame region along each dimension
+static const size_t screen_region_x_pixels = ST7789_LINE_SIZE / N_SCREEN_REGIONS_X;
+static const size_t screen_region_y_pixels = ST7789_COLUMN_SIZE / N_SCREEN_REGIONS_Y;
+typedef struct {
+  bool changed;
+} screen_region_t;
+static screen_region_t screen_regions[N_SCREEN_REGIONS_X * N_SCREEN_REGIONS_Y];
+static uint16_t new_temp_colors[MLX90640_PIXEL_NUM];
+static uint16_t old_temp_colors[MLX90640_PIXEL_NUM];
+
+/*
+ * frame_index_to_screen_region
+ *
+ * @brief Convert pixel location to a region in the frame buffer.
+ */
+screen_region_t* frame_index_to_screen_region(size_t xi, size_t yi) {
+  size_t screen_region_xi = (size_t)(xi * screen_region_xi_scale);
+  size_t screen_region_yi = (size_t)(yi * screen_region_yi_scale);
+  return &screen_regions[screen_region_yi * N_SCREEN_REGIONS_X + screen_region_xi];
+}
+
 void st7789_fill_32_24(float *frame) {
-  // calculate min and max temperature values
+  /*
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   * calculate min and max temperature values
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   */
   float max_temp = -INFINITY;
   float min_temp = INFINITY;
   for (int i = 0; i < MLX90640_PIXEL_NUM; i++) {
@@ -253,11 +338,55 @@ void st7789_fill_32_24(float *frame) {
     }
   }
 
-  for (int xi = 0; xi < 32; xi++) {
-    for (int yi = 0; yi < 24; yi++) {
-      // FIXME: find way to write frame correctly
-      uint16_t color_i = heatmap_color_rgb565[(uint)((frame[yi * 32 + xi] - min_temp) / (max_temp - min_temp) * 10)];
-      st7789_fill_rect(10 * xi, 10 * yi, 10 * xi + 9, 10 * yi + 9, color_i);
+  /*
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   * temperature color mapping and diffing
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   */
+  for (size_t xi = 0; xi < MLX90640_LINE_SIZE; xi++) {
+    for (size_t yi = 0; yi < MLX90640_COLUMN_SIZE; yi++) {
+      float pix = frame[yi * MLX90640_LINE_SIZE + xi];
+      // update new_temp_colors to have the newly calculated temperature
+      new_temp_colors[yi * MLX90640_LINE_SIZE + xi] = heatmap_color_rgb565[(size_t)((pix - min_temp) / (max_temp - min_temp) * 9)];
+      // check if this color is updated. If so, update the frame region
+      if (old_temp_colors[yi * MLX90640_LINE_SIZE + xi] != new_temp_colors[yi * MLX90640_LINE_SIZE + xi]) {
+        frame_index_to_screen_region(xi, yi)->changed = true;
+      }
+    }
+  }
+  /*
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%
+   * update st7789 from diffing
+   * %%%%%%%%%%%%%%%%%%%%%%%%%%
+   */
+  for (size_t screen_region_xi = 0; screen_region_xi < N_SCREEN_REGIONS_X; screen_region_xi++) {
+    for (size_t screen_region_yi = 0; screen_region_yi < N_SCREEN_REGIONS_Y; screen_region_yi++) {
+      // check if the frame region was changed. If so, update its rectangle
+      size_t screen_region_index = screen_region_yi * N_SCREEN_REGIONS_X + screen_region_xi;
+      if (screen_regions[screen_region_index].changed) {
+        // find the actual region in pixel coordinates on the screen that the screen region covers
+        uint screen_region_xi0 = screen_region_xi * screen_region_x_pixels;
+        uint screen_region_xi1 = (screen_region_xi + 1) * screen_region_x_pixels - 1;
+        uint screen_region_yi0 = screen_region_yi * screen_region_y_pixels;
+        uint screen_region_yi1 = (screen_region_yi + 1) * screen_region_y_pixels - 1;
+        // set the window sized to the frame we're using and write to its ram
+        st7789_set_window(screen_region_xi0, screen_region_xi1, screen_region_yi0, screen_region_yi1);
+        st7789_write_command(ST7789_CMD_RAMWR);
+        // load buffer with frame_region
+        uint16_t screen_region_colors_buf[screen_region_x_pixels * screen_region_y_pixels];
+        for (size_t screen_region_colors_buf_xi = 0; screen_region_colors_buf_xi < screen_region_x_pixels; screen_region_colors_buf_xi++) {
+          for (size_t screen_region_colors_buf_yi = 0; screen_region_colors_buf_yi < screen_region_y_pixels; screen_region_colors_buf_yi++) {
+            // multiply by scale to go from screen_region_xi -> mlx90640 index
+            // add screen_region_colors_buf_xi and screen_region_colors_buf_yi to find exact mlx90640 pixel
+            size_t mlx90640_xi = (screen_region_xi0 + screen_region_colors_buf_xi) * (MLX90640_LINE_SIZE / ST7789_LINE_SIZE);
+            size_t mlx90640_yi = (screen_region_yi0 + screen_region_colors_buf_yi) * (MLX90640_COLUMN_SIZE / ST7789_COLUMN_SIZE);
+            screen_region_colors_buf[screen_region_colors_buf_yi * screen_region_x_pixels + screen_region_colors_buf_xi] = new_temp_colors[mlx90640_yi * MLX90640_LINE_SIZE + mlx90640_xi];
+          }
+        }
+        // now that entire buffer is loaded for the screen region, let's just write it
+        // note that screen_region_colors_buf is now mutated, and we must ignore its value until the next iteration
+        st7789_write_data_words(screen_region_colors_buf, screen_region_x_pixels * screen_region_y_pixels);
+      }
     }
   }
 }

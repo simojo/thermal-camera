@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "pico/stdlib.h"
 
+#define ST7789_LINE_SIZE 320
+#define ST7789_COLUMN_SIZE 240
+
 // quick convert for three RGB values to rgb-565
 #define RGB565(R, G, B) \
   (((uint16_t)((R) & 0b11111000) << 8) | \
