@@ -22,7 +22,6 @@ void MLX90640_I2CInit() {
 }
 
 static inline void sclh(void) {
-  gpio_init(SCL);
   gpio_set_dir(SCL, GPIO_IN);
 }
 
@@ -36,7 +35,6 @@ static inline uint8_t sda_read(void) {
 }
 
 static inline void sdah(void) {
-  gpio_init(SDA);
   gpio_set_dir(SDA, GPIO_IN);
 }
 
@@ -54,14 +52,9 @@ int _i2c_write_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool n
   uint8_t ack = 1;
 
   // slaveAddr is 7 bits, so we shift by 1 to start at 7th bit
-  uint8_t addr_byte_msk = 0x80 >> 1;
+  uint8_t addr_byte_msk = 0x80;
+  slaveAddr = (slaveAddr << 1) | 0; // write LSB is LOW
   for (int j = 0; j < 8; j++) {
-    if (j == 7) {
-      sdal(); // write low
-      sclh();
-      scll();
-      break;
-    }
     slaveAddr & addr_byte_msk ? sdah() : sdal();
     sclh();
     addr_byte_msk >>= 1;
@@ -122,14 +115,9 @@ int _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool no
   uint8_t ack = 1;
 
   uint8_t addr_byte_msk = 0x80;
+  slaveAddr = (slaveAddr << 1) | 1; // write LSB is LOW
   for (int j = 0; j < 8; j++) {
-    if (j == 7) {
-      sdah(); // read high
-      sclh();
-      scll();
-      break;
-    }
-    (slaveAddr << 1) & addr_byte_msk ? sdah() : sdal();
+    slaveAddr & addr_byte_msk ? sdah() : sdal();
     sclh();
     addr_byte_msk >>= 1;
     scll();
@@ -179,6 +167,8 @@ static inline void _i2c_init(void) {
   init = true;
   gpio_init(SDA);
   gpio_init(SCL);
+  gpio_set_function(SDA, GPIO_FUNC_SIO);
+  gpio_set_function(SCL, GPIO_FUNC_SIO);
   gpio_set_dir(SDA, GPIO_IN);
   gpio_set_dir(SCL, GPIO_IN);
 }
