@@ -144,7 +144,6 @@ int _i2c_read_blocking(uint8_t slaveAddr, uint8_t *buf, uint16_t nbytes, bool no
       scll();
     }
     sdal();
-    sleep_us(5);
     sclh();
     p++;
     scll();
@@ -165,12 +164,18 @@ int MLX90640_I2CGeneralReset() {
 
 static inline void _i2c_init(void) {
   init = true;
+  i2c_init(i2c0, I2C_BAUD);
+  gpio_set_function(SDA, GPIO_FUNC_I2C);
+  gpio_set_function(SCL, GPIO_FUNC_I2C);
+  /*
+  FIXME: for bit banging
   gpio_init(SDA);
   gpio_init(SCL);
   gpio_set_function(SDA, GPIO_FUNC_SIO);
   gpio_set_function(SCL, GPIO_FUNC_SIO);
   gpio_set_dir(SDA, GPIO_IN);
   gpio_set_dir(SCL, GPIO_IN);
+  */
 }
 
 int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddressRead, uint16_t *data) {
@@ -187,9 +192,15 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
     int error = 0;
 
-    error |= _i2c_write_blocking(slaveAddr, cmd, 2, 1);
-    error |= _i2c_read_blocking(slaveAddr, buf, 2*nMemAddressRead, 0);
-    if (error != 0) {
+    // NOTE: bit banging implementation
+    // error |= _i2c_write_blocking(slaveAddr, cmd, 2, 1);
+    // error |= _i2c_read_blocking(slaveAddr, buf, 2*nMemAddressRead, 0);
+    if (i2c_write_blocking(i2c0, slaveAddr, cmd, 2, 1) < 0) {
+      error = -1;
+      return error;
+    }
+    if (i2c_read_blocking(i2c0, slaveAddr, buf, 2*nMemAddressRead, 0) < 0) {
+      error = -1;
       return error;
     }
 
@@ -212,9 +223,12 @@ int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
     cmd[3] = data & 0x00FF;
 
     int error = 0;
-    // NOTE: timeout is divided by number of bytes to write/read
-    uint write_timeout_us = 1000 * 4;
 
-    error |= _i2c_write_blocking(slaveAddr, cmd, 4, 0);
+    // NOTE: bit banging implementation
+    // error |= _i2c_write_blocking(slaveAddr, cmd, 4, 0);
+    if (i2c_write_blocking(i2c0, slaveAddr, cmd, 4, 0) < 0) {
+      error = -1;
+      return error;
+    }
     return error;
 }
