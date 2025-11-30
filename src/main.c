@@ -60,10 +60,10 @@ void core1_main() {
 int main() {
   stdio_init_all();
 
-  // initialize the mutex
+  // initialize the mutex and launch core for handling st7789
   mutex_init(&mutex);
-
   multicore_launch_core1(core1_main);
+
   for (int i = 0; i < 3; i++) {
     printf("\rO o o o");
     sleep_ms(500);
@@ -86,7 +86,10 @@ int main() {
     printf("[ERROR] DumpEE returned error.\n");
   }
   printf("[INFO] dumpEE.\n");
-  MLX90640_SetRefreshRate(MLX90640_ADDR, 0b010);
+  MLX90640_SetRefreshRate(MLX90640_ADDR, 0b011);
+
+  // after reading the EEPROM, we can read much faster.
+  MLX90640_I2CFreqSet(1000 * 1000);
 
   if (MLX90640_ExtractParameters(eeData, &mlx90640) != 0) {
     printf("[ERROR] ExtractParameters returned error.\n");

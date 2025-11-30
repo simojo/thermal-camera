@@ -15,27 +15,39 @@
 
 volatile bool st7789_is_init = false;
 
+#define N_HEATMAP_COLORS 20
 /*
  * define ten colors that create the heat map
  */
 const uint16_t heatmap_color_rgb565[] = {
-  RGB565(0,   0,   128), // dark blue
-  RGB565(0,   0,   255), // blue
-  RGB565(0,   128, 255), // cyan
-  RGB565(0,   255, 128), // turquoise
-  RGB565(0,   255, 0),   // green
-  RGB565(128, 255, 0),   // yellow-green
-  RGB565(255, 255, 0),   // yellow
-  RGB565(255, 128, 0),   // orange
-  RGB565(255, 64,  0),   // red-orange
-  RGB565(255, 255, 255), // white (hottest)
+    RGB565(0, 0, 128),
+    RGB565(0, 0, 191),
+    RGB565(0, 64, 255),
+    RGB565(0, 128, 255),
+    RGB565(0, 191, 255),
+    RGB565(0, 255, 255),
+    RGB565(0, 255, 191),
+    RGB565(0, 255, 128),
+    RGB565(0, 255, 64),
+    RGB565(0, 255, 0),
+    RGB565(64, 255, 0),
+    RGB565(128, 255, 0),
+    RGB565(191, 255, 0),
+    RGB565(255, 255, 0),
+    RGB565(255, 191, 0),
+    RGB565(255, 128, 0),
+    RGB565(255, 64, 0),
+    RGB565(255, 0, 0),
+    RGB565(191, 0, 0),
+    RGB565(128, 0, 0)
 };
+
+
 
 void st7789_write_data_byte(uint8_t b);
 void st7789_write_command(uint8_t cmd);
 
 void st7789_init(void) {
-  printf("here\n");
   gpio_set_function(PICO_DEFAULT_SPI_TX_PIN, GPIO_FUNC_SPI);
   gpio_set_function(PICO_DEFAULT_SPI_RX_PIN, GPIO_FUNC_SPI);
   gpio_set_function(PICO_DEFAULT_SPI_SCK_PIN, GPIO_FUNC_SPI);
@@ -282,7 +294,7 @@ void st7789_fill_32_24(float *frame) {
     for (size_t yi = 0; yi < MLX90640_COLUMN_SIZE; yi++) {
       float pix = frame[yi * MLX90640_LINE_SIZE + xi];
       // update new_temp_colors to have the newly calculated temperature
-      new_temp_colors[yi * MLX90640_LINE_SIZE + xi] = heatmap_color_rgb565[(size_t)((pix - min_temp) / (max_temp - min_temp) * 9)];
+      new_temp_colors[yi * MLX90640_LINE_SIZE + xi] = heatmap_color_rgb565[(size_t)((pix - min_temp) / (max_temp - min_temp) * (N_HEATMAP_COLORS - 1))];
       // check if this color is updated. If so, update the frame region
       if (old_temp_colors[yi * MLX90640_LINE_SIZE + xi] != new_temp_colors[yi * MLX90640_LINE_SIZE + xi]) {
         frame_index_to_screen_region(xi, yi)->changed = true;

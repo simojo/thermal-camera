@@ -11,6 +11,9 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
+/*
+ * The EEPROM is limited to a 400kHz baud rate. After we're done with it, we can go 1 Mhz.
+ */
 #define I2C_BAUD 400 * 1000
 
 bool init = 0;
@@ -212,6 +215,7 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 }
 
 void MLX90640_I2CFreqSet(int freq) {
+  i2c_set_baudrate(i2c0, freq);
 }
 
 int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
