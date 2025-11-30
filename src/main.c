@@ -7,6 +7,8 @@
 #include "mlx90640/MLX90640_I2C_Driver.h"
 #include "st7789.h"
 #include "st7789_framebuf.h"
+#include "pico/multicore.h"
+#include "pico/mutex.h"
 
 #define MLX90640_ADDR 0x33
 
@@ -27,16 +29,41 @@ const uint16_t heatmap_color[] = {
 static uint16_t eeData[MLX90640_EEPROM_DUMP_NUM];
 
 paramsMLX90640 mlx90640;
-static float frameTemperature[MLX90640_PIXEL_NUM];
+static float frameTemperatureCore0[MLX90640_PIXEL_NUM];
+static float frameTemperatureCore1[MLX90640_PIXEL_NUM];
 static uint16_t frameData[MLX90640_PIXEL_NUM + 64 + 2];
 
-int main() {
-  stdio_init_all();
+mutex_t mutex;
+volatile bool frameTemperatureChanged = false;
 
+/*
+ * core1_main
+ *
+ * @brief This core is for loading and sending the frame buffer.
+ */
+void core1_main() {
+  // clear the st7789 display
   st7789_init();
   st7789_framebuf_fill_rect(0, 0, 319, 239, BLACK);
   st7789_framebuf_flush();
 
+  while (1) {
+    mutex_enter_blocking(&mutex);
+    if (frameTemperatureChanged) {
+      st7789_fill_32_24(frameTemperatureCore1);
+    }
+    // critical section
+    mutex_exit(&mutex);
+  }
+}
+
+int main() {
+  stdio_init_all();
+
+  // initialize the mutex
+  mutex_init(&mutex);
+
+  multicore_launch_core1(core1_main);
   for (int i = 0; i < 3; i++) {
     printf("\rO o o o");
     sleep_ms(500);
@@ -76,13 +103,24 @@ int main() {
     if (subpage == 0 || subpage == 1) {
       float eTa = MLX90640_GetTa(frameData, &mlx90640) - 8;
       float emissivity = 0.95;
-      MLX90640_CalculateTo(frameData, &mlx90640, emissivity, eTa, frameTemperature);
 
+
+      MLX90640_CalculateTo(frameData, &mlx90640, emissivity, eTa, frameTemperatureCore0);
+      //
       // NOTE: leaving this out because we do have bad pixels and this breaks it
-      // MLX90640_BadPixelsCorrection((&mlx90640)->brokenPixels, frameTemperature, 1, &mlx90640);
-      // MLX90640_BadPixelsCorrection((&mlx90640)->outlierPixels, frameTemperature, 1, &mlx90640);
-      // draw out to the st7789 now that we have the colors sorted
-      st7789_fill_32_24(frameTemperature);
+      // MLX90640_BadPixelsCorrection((&mlx90640)->brokenPixels, frameTemperatureCore0, 1, &mlx90640);
+      // MLX90640_BadPixelsCorrection((&mlx90640)->outlierPixels, frameTemperatureCore0, 1, &mlx90640);
+      // signal to the other thread that we're ready to draw the next frame
+
+      mutex_enter_blocking(&mutex);
+
+      frameTemperatureChanged = true;
+      for (int i = 0; i < MLX90640_PIXEL_NUM; i++) {
+        frameTemperatureCore1[i] = frameTemperatureCore0[i];
+      }
+
+      mutex_exit(&mutex);
+
     } else {
       printf("MLX90640 failed while getting frame data (%d).\n", subpage);
     }

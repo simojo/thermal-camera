@@ -27,6 +27,7 @@ target_include_directories(thermal-camera PUBLIC
 
 target_link_libraries(thermal-camera
   pico_stdlib
+  pico_multicore
   hardware_spi
   hardware_clocks
   hardware_pio
