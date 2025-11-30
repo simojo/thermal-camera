@@ -11,16 +11,16 @@
 
 const char *heatmap_ascii = " .:-=+*#%@";
 const char *heatmap_color[] = {
-    "\x1b[38;2;0;0;128m",     // dark blue
-    "\x1b[38;2;0;0;255m",     // blue
-    "\x1b[38;2;0;128;255m",   // cyan
-    "\x1b[38;2;0;255;128m",   // turquoise
-    "\x1b[38;2;0;255;0m",     // green
-    "\x1b[38;2;128;255;0m",   // yellow-green
-    "\x1b[38;2;255;255;0m",   // yellow
-    "\x1b[38;2;255;128;0m",   // orange
-    "\x1b[38;2;255;64;0m",    // red-orange
-    "\x1b[38;2;255;255;255m"  // white (hottest)
+    " ",
+    ".",
+    ":",
+    "-",
+    "=",
+    "+",
+    "*",
+    "#",
+    "%",
+    "@",
 };
 #define ANSI_RESET "\x1b[0m"
 
@@ -88,25 +88,23 @@ int main() {
   }
   printf("\r\n");
 
-  printEEPROM();
-  printf("Press any character to continue...\n");
-  getchar();
-  MLX90640_SetRefreshRate(MLX90640_ADDR, 0b001);
-  printf("[INFO] set refresh rate.\n");
-  MLX90640_SetChessMode(MLX90640_ADDR);
-  printf("[INFO] set chess mode.\n");
-  MLX90640_SetSubPageRepeat(MLX90640_ADDR, 0);
-  printf("[INFO] set subpage repeat.\n");
   if (MLX90640_DumpEE(MLX90640_ADDR, eeData) != 0) {
     printf("[ERROR] DumpEE returned error.\n");
     getchar();
   }
   printf("[INFO] dumpEE.\n");
+  MLX90640_SetRefreshRate(MLX90640_ADDR, 0b010);
+  printf("[INFO] set refresh rate.\n");
+  MLX90640_SetChessMode(MLX90640_ADDR);
+  printf("[INFO] set chess mode.\n");
+  MLX90640_SetSubPageRepeat(MLX90640_ADDR, 0);
+  printf("[INFO] set subpage repeat.\n");
   if (MLX90640_ExtractParameters(eeData, &mlx90640) != 0) {
     printf("[ERROR] ExtractParameters returned error.\n");
     getchar();
   }
   printf("[INFO] extractparameters.\n");
+  MLX90640_I2CWrite(MLX90640_ADDR, MLX90640_STATUS_REG, MLX90640_INIT_STATUS_VALUE);
 
   // get user input
   char c = '\0';
@@ -132,8 +130,8 @@ int main() {
       float emissivity = 0.95;
       MLX90640_CalculateTo(frameData, &mlx90640, emissivity, eTa, frameTemperature);
 
-      MLX90640_BadPixelsCorrection((&mlx90640)->brokenPixels, frameTemperature, 1, &mlx90640);
-      MLX90640_BadPixelsCorrection((&mlx90640)->outlierPixels, frameTemperature, 1, &mlx90640);
+      // MLX90640_BadPixelsCorrection((&mlx90640)->brokenPixels, frameTemperature, 1, &mlx90640);
+      // MLX90640_BadPixelsCorrection((&mlx90640)->outlierPixels, frameTemperature, 1, &mlx90640);
 
       float max = -INFINITY;
       float min = INFINITY;
@@ -144,10 +142,8 @@ int main() {
       }
       float delta = max - min > 0 ? max - min : 1;
       for (int i = 0; i < MLX90640_PIXEL_NUM; i += 1) {
-        uint8_t heatmap_index = (uint8_t)((frameTemperature[i] - min)/delta * 10.0f);
-        if (heatmap_index < 0) heatmap_index = 0;
-        if (heatmap_index > 9) heatmap_index = 9;
-        printf("%s%s%s", heatmap_color[heatmap_index], "██", ANSI_RESET);
+        uint8_t heatmap_index = (uint8_t)((frameTemperature[i] - min)/delta * 9);
+        printf("%s%s", heatmap_color[heatmap_index], heatmap_color[heatmap_index]);
         if ((i + 1) % 32 == 0) {
           printf("\n");
         }

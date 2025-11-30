@@ -1348,7 +1348,7 @@ static int ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640)
         pixCnt = pixCnt + 1;
         
     } 
-    printf("brokenPixCnt: %3d, outlierPixCnt: %3d", brokenPixCnt, outlierPixCnt);
+    printf("brokenPixCnt: %3d, outlierPixCnt: %3d\n", brokenPixCnt, outlierPixCnt);
     
     if(brokenPixCnt > 4)  
     {
