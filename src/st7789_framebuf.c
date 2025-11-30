@@ -1,0 +1,101 @@
+#include "st7789.h"
+#include <stdlib.h>
+#include <math.h>
+
+/*
+ * @brief define the frame buffer for the st7789
+ */
+static uint16_t framebuf[ST7789_LINE_SIZE * ST7789_COLUMN_SIZE];
+static size_t framebuf_window_x0 = 0;
+static size_t framebuf_window_y0 = 0;
+static size_t framebuf_window_x1 = 0;
+static size_t framebuf_window_y1 = 0;
+#define FRAMEBUF_INDEX(xi, yi) yi * ST7789_LINE_SIZE + xi
+
+void st7789_framebuf_flush(void) {
+  st7789_set_window(0, 0, ST7789_LINE_SIZE-1, ST7789_COLUMN_SIZE-1);
+  st7789_write_command(ST7789_CMD_RAMWR);
+  st7789_write_data_words(framebuf, ST7789_LINE_SIZE * ST7789_COLUMN_SIZE);
+}
+
+void st7789_framebuf_draw_pixel(uint x, uint y, uint16_t color) {
+  framebuf[FRAMEBUF_INDEX(x, y)] = color;
+}
+
+void st7789_framebuf_set_window(size_t x0, size_t y0, size_t x1, size_t y1) {
+  framebuf_window_x0 = x0;
+  framebuf_window_y0 = y0;
+  framebuf_window_x1 = x1;
+  framebuf_window_y1 = y1;
+}
+
+void st7789_framebuf_write_data_words(uint16_t *words, size_t len) {
+  size_t i = 0;
+  for (size_t xi = framebuf_window_x0; xi <= framebuf_window_x1; xi++) {
+    for (size_t yi = framebuf_window_y0; yi <= framebuf_window_y1; yi++) {
+      if (i == len) return;
+      framebuf[FRAMEBUF_INDEX(xi, yi)] = words[i++];
+    }
+  }
+}
+
+/*
+ * st7789_draw_line
+ *
+ * @brief Draw a line on using Bresenham's line algorithm.
+ */
+void st7789_framebuf_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
+  // use Bresenham's line algorithm (source: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
+
+  int dx = abs((int)x1 - (int)x0);
+  // direction of x
+  int dirx = x0 < x1 ? 1 : -1;
+  int dy = -abs((int)y1 - (int)y0);
+  // direction of x
+  int diry = y0 < y1 ? 1 : -1;
+  int e = dx + dy;
+
+  // modify x0,y0 directly because we passed by value
+  while (1) {
+    st7789_draw_pixel(x0, y0, color);
+
+    if (x0 == x1 && y0 == y1) {
+      break;
+    }
+
+    int e2 = 2 * e;
+    if (e2 >= dy) {
+      e += dy;
+      x0 += dirx;
+    }
+    if (e2 <= dx) {
+      e += dx;
+      y0 += diry;
+    }
+  }
+}
+
+/*
+ * st7789_framebuf_fill_rect
+ *
+ * @brief Fill a rect in the framebuffer.
+ */
+void st7789_framebuf_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
+  // switch values if they are reversed
+  if (x1 < x0) {
+    uint tmp = x0;
+    x0 = x1;
+    x1 = tmp;
+  }
+  // switch values if they are reversed
+  if (y1 < y0) {
+    uint tmp = y0;
+    y0 = y1;
+    y1 = tmp;
+  }
+  for (size_t xi = x0; xi < x1; xi++) {
+    for (size_t yi = y0; yi < y1; yi++) {
+      framebuf[FRAMEBUF_INDEX(xi, yi)] = color;
+    }
+  }
+}
