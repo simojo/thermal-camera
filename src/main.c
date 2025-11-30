@@ -54,9 +54,6 @@ void core1_main() {
     }
     // critical section
     mutex_exit(&mutex);
-    // write with transparent background
-    st7789_framebuf_write_string(0, 0, "Hello, world!", WHITE, BLACK, true);
-    st7789_framebuf_flush();
   }
 }
 

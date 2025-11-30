@@ -337,6 +337,9 @@ void st7789_fill_32_24(float *frame) {
   }
   st7789_framebuf_fill_rect(10, 10, 15, ST7789_COLUMN_SIZE - 10, WHITE);
 
+  // write with transparent background
+  st7789_framebuf_write_string(0, 0, "Hi Hanooshram.", WHITE, BLACK, false);
+
   // now that we've done all of our transformations, flush the frame buffer
   st7789_framebuf_flush();
 }
