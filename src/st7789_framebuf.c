@@ -1,5 +1,6 @@
 #include "st7789.h"
 #include <stdlib.h>
+#include "fonts.h"
 #include <math.h>
 
 /*
@@ -36,6 +37,39 @@ void st7789_framebuf_write_data_words(uint16_t *words, size_t len) {
       if (i == len) return;
       framebuf[FRAMEBUF_INDEX(xi, yi)] = words[i++];
     }
+  }
+}
+
+void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
+  st7789_framebuf_set_window(x0, y0, x0 + FONT_W - 1, y0 + FONT_H - 1);
+  for (uint32_t i = 0; i < FONT_H; i++) {
+    uint8_t bitmap_row = thefont[(c - 32) * FONT_H + i];
+    for (uint32_t j = 0; j < FONT_W; j++) {
+      // keep shifting and checking the MSb of the word
+      // if it's 1, then we should draw the character's pixel
+      // if it's 0, then we should draw the bgcolor
+      if ((bitmap_row << j) & 0x80) {
+        framebuf[FRAMEBUF_INDEX(x0 + j, y0 + i)] = color;
+      }
+      else {
+        if (!bgtransparent) {
+          framebuf[FRAMEBUF_INDEX(x0 + j, y0 + i)] = bgcolor;
+        }
+      }
+    }
+  }
+}
+
+void st7789_framebuf_write_string(uint x0, uint y0, const char *s, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
+  char *p = (char *)s;
+  int i = 0;
+  while (*p) {
+    // on line breaks, increment us down a line
+    if (*p == '\n') {
+      y0 += FONT_H;
+    }
+    st7789_framebuf_write_char(x0 + i * FONT_W, y0, *p++, color, bgcolor, bgtransparent);
+    i++;
   }
 }
 
