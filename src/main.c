@@ -83,6 +83,7 @@ int main() {
     printf("[ERROR] DumpEE returned error.\n");
   }
   printf("[INFO] dumpEE.\n");
+  // set the refresh rate to be 4Hz
   MLX90640_SetRefreshRate(MLX90640_ADDR, 0b011);
 
   // after reading the EEPROM, we can read much faster.
@@ -107,12 +108,12 @@ int main() {
 
 
       MLX90640_CalculateTo(frameData, &mlx90640, emissivity, eTa, frameTemperatureCore0);
-      //
+
       // NOTE: leaving this out because we do have bad pixels and this breaks it
       // MLX90640_BadPixelsCorrection((&mlx90640)->brokenPixels, frameTemperatureCore0, 1, &mlx90640);
       // MLX90640_BadPixelsCorrection((&mlx90640)->outlierPixels, frameTemperatureCore0, 1, &mlx90640);
-      // signal to the other thread that we're ready to draw the next frame
 
+      // signal to the core1 that we're ready to draw the next frame
       mutex_enter_blocking(&mutex);
 
       frameTemperatureChanged = true;
@@ -123,7 +124,7 @@ int main() {
       mutex_exit(&mutex);
 
     } else {
-      printf("MLX90640 failed while getting frame data (%d).\n", subpage);
+      printf("[ERROR] MLX90640 failed while getting frame data (%d).\n", subpage);
     }
   }
 }
