@@ -16,6 +16,7 @@ pico_sdk_init()
 add_subdirectory(lib/mlx90640)
 
 add_executable(thermal-camera
+  src/fonts.c
   src/main.c
   src/st7789.c
   src/st7789_framebuf.c

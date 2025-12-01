@@ -29,7 +29,7 @@ void st7789_framebuf_flush(void) {
   st7789_write_data_words(framebuf, ST7789_LINE_SIZE * ST7789_COLUMN_SIZE);
 }
 
-inline void st7789_clip_pixel_vals(uint *_x, uint *_y) {
+static inline void st7789_clip_pixel_vals(uint *_x, uint *_y) {
   // keep values within range
   if (*_x >= ST7789_LINE_SIZE) *_x = ST7789_LINE_SIZE-1;
   if (*_y >= ST7789_COLUMN_SIZE) *_y = ST7789_COLUMN_SIZE-1;
