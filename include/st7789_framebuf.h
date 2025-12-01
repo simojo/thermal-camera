@@ -1,3 +1,14 @@
+/*
+ * st7789_framebuf.h
+ *
+ * @brief Supports buffering of frames to the ST7789 display. This file expects
+ * that the user have an extra 153kB to play around with. Otherwise, do not do
+ * frame buffering.
+ *
+ * @copyright Copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
+ * Licensed under the Apache License, Version 2.0.
+ */
+
 #ifndef _ST7789_FRAMEBUF_H
 #define _ST7789_FRAMEBUF_H
 

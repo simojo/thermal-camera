@@ -1,3 +1,10 @@
+/*
+ * st7789.c
+ *
+ * @copyright Copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
+ * Licensed under the Apache License, Version 2.0.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -6,6 +13,7 @@
 #include "hardware/gpio.h"
 #include <malloc.h>
 #include "st7789.h"
+#include "fonts.h"
 #include "st7789_framebuf.h"
 #include <math.h>
 #include "mlx90640/MLX90640_API.h"
@@ -238,35 +246,112 @@ void st7789_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
   free(buf);
 }
 
-// define the number of regions to keep track of frame changes as the
-// same as how many pixels the mlx90640 has
-// x,y refers to how many subdivisions we make of the frame
-#define N_SCREEN_REGIONS_X 16
-#define N_SCREEN_REGIONS_Y 12
-#define SCREEN_REGIONS_NUM N_SCREEN_REGIONS_X * N_SCREEN_REGIONS_Y
-// define scaling factors to help our binning of frame segments
-static const float screen_region_xi_scale = (float)N_SCREEN_REGIONS_X / MLX90640_LINE_SIZE;
-static const float screen_region_yi_scale = (float)N_SCREEN_REGIONS_Y / MLX90640_COLUMN_SIZE;
-// define number of st7789 pixels in each frame region along each dimension
-static const size_t screen_region_x_pixels = ST7789_LINE_SIZE / N_SCREEN_REGIONS_X;
-static const size_t screen_region_y_pixels = ST7789_COLUMN_SIZE / N_SCREEN_REGIONS_Y;
-typedef struct {
-  bool changed;
-} screen_region_t;
-static screen_region_t screen_regions[N_SCREEN_REGIONS_X * N_SCREEN_REGIONS_Y];
-static uint16_t new_temp_colors[MLX90640_PIXEL_NUM];
-static uint16_t old_temp_colors[MLX90640_PIXEL_NUM];
+static uint8_t st7789_loading_ani_state = 0;
+#define ST7789_LOADING_ANI_N_STATES 7
+#define ST7789_LOADING_ANI_N_CHARS 13
+static const char st7789_loading_ani_words[ST7789_LOADING_ANI_N_STATES][ST7789_LOADING_ANI_N_CHARS] = {
+  "   Loading   ",
+  "  <Loading>  ",
+  " <<Loading>> ",
+  "<<<Loading>>>",
+  " <<Loading>> ",
+  "  <Loading>  ",
+  "   Loading   ",
+};
+void st7789_loading_ani_tick(void) {
+  size_t center_x = ST7789_LINE_SIZE / 2;
+  size_t center_y = ST7789_COLUMN_SIZE / 2;
+  size_t r0 = 10;
+  size_t r1 = 20;
+
+  // first clear the framebuf
+  st7789_framebuf_fill_rect(0, 0, ST7789_LINE_SIZE-1, ST7789_COLUMN_SIZE-1, BLACK);
+
+  // place "<<Loading>>" in the very center of the screen
+  st7789_framebuf_write_string(
+    ST7789_LINE_SIZE/2 - ST7789_LOADING_ANI_N_CHARS/2 * FONT_W,
+    FONT_H * 2,
+    st7789_loading_ani_words[st7789_loading_ani_state % ST7789_LOADING_ANI_N_STATES],
+    WHITE,
+    BLACK,
+    true
+  );
+
+  float theta = st7789_loading_ani_state * M_PI / ST7789_LOADING_ANI_N_STATES;
+  st7789_framebuf_draw_line(
+    center_x + r0 * (size_t)cos(theta),
+    center_y + r0 * (size_t)sin(theta),
+    center_x + r1 * (size_t)cos(theta),
+    center_y + r1 * (size_t)sin(theta),
+    WHITE
+  );
+
+  st7789_loading_ani_state = (st7789_loading_ani_state + 1) % ST7789_LOADING_ANI_N_STATES;
+
+  st7789_framebuf_flush();
+}
 
 /*
- * frame_index_to_screen_region
+ * MLX90640 screen orienation
  *
- * @brief Convert pixel location to a region in the frame buffer.
+ *       31 30          0
+ *       l  l           l
+ *       o  o    ...    o
+ *       c  c           c
+ * row0  ----------------
+ * row1  |A             |
+ *       |              |
+ * ...   |              |
+ *       |             B|
+ * row23 ----------------
+ *
  */
-screen_region_t* frame_index_to_screen_region(size_t xi, size_t yi) {
-  size_t screen_region_xi = (size_t)(xi * screen_region_xi_scale);
-  size_t screen_region_yi = (size_t)(yi * screen_region_yi_scale);
-  return &screen_regions[screen_region_yi * N_SCREEN_REGIONS_X + screen_region_xi];
+
+/*
+ * @brief define where the MLX90640 A, B markers get placed in the ST7789's screen
+ */
+#define MLX90640_A_GLOBAL_X (ST7789_LINE_SIZE-1)
+#define MLX90640_A_GLOBAL_Y (0)
+#define MLX90640_B_GLOBAL_X (ST7789_LINE_SIZE/2)
+#define MLX90640_B_GLOBAL_Y (ST7789_COLUMN_SIZE-1)
+
+/*
+ * @brief In MLX90640 perspective, define (x,y) = (0,0) to be the "A" corner of
+ * the camera; define (x,y) = (max,max) to be "B" corner
+ *
+ * @note I don't like how they (Melexis) have 0-index on the right. It just leads to confusion.
+ */
+void mlx90640_xy_to_st7789_xy(size_t xi_mlx, size_t yi_mlx, size_t *xi_st, size_t *yi_st) {
+  if (false) {
+  } else if (MLX90640_A_GLOBAL_X < MLX90640_B_GLOBAL_X && MLX90640_A_GLOBAL_Y < MLX90640_B_GLOBAL_Y) {
+    // A at top-left, B at bottom-right (0deg CCW)
+    float sx = (float)((int)MLX90640_B_GLOBAL_X - (int)MLX90640_A_GLOBAL_X) / (MLX90640_LINE_SIZE - 1);
+    float sy = (float)((int)MLX90640_B_GLOBAL_Y - (int)MLX90640_A_GLOBAL_Y) / (MLX90640_COLUMN_SIZE - 1);
+    *xi_st = (size_t)(MLX90640_A_GLOBAL_X + xi_mlx * sx + 0.5f);
+    *yi_st = (size_t)(MLX90640_A_GLOBAL_Y + yi_mlx * sy + 0.5f);
+  } else if (MLX90640_A_GLOBAL_X < MLX90640_B_GLOBAL_X && MLX90640_A_GLOBAL_Y > MLX90640_B_GLOBAL_Y) {
+    // A at bottom-left, B at top-right (90deg CCW)
+    float sx = (float)((int)MLX90640_B_GLOBAL_X - (int)MLX90640_A_GLOBAL_X) / (MLX90640_COLUMN_SIZE - 1);
+    float sy = (float)((int)MLX90640_B_GLOBAL_Y - (int)MLX90640_A_GLOBAL_Y) / (MLX90640_LINE_SIZE - 1);
+    *xi_st = (size_t)(MLX90640_A_GLOBAL_X + yi_mlx * sx + 0.5f);
+    *yi_st = (size_t)(MLX90640_A_GLOBAL_Y + xi_mlx * sy + 0.5f);
+  } else if (MLX90640_A_GLOBAL_X > MLX90640_B_GLOBAL_X && MLX90640_A_GLOBAL_Y > MLX90640_B_GLOBAL_Y) {
+    // A at bottom-right, B at top-left (180deg CCW)
+    float sx = (float)((int)MLX90640_B_GLOBAL_X - (int)MLX90640_A_GLOBAL_X) / (MLX90640_LINE_SIZE - 1);
+    float sy = (float)((int)MLX90640_B_GLOBAL_Y - (int)MLX90640_A_GLOBAL_Y) / (MLX90640_COLUMN_SIZE - 1);
+    *xi_st = (size_t)(MLX90640_A_GLOBAL_X + xi_mlx * sx + 0.5f);
+    *yi_st = (size_t)(MLX90640_A_GLOBAL_Y + yi_mlx * sy + 0.5f);
+  } else if (MLX90640_A_GLOBAL_X > MLX90640_B_GLOBAL_X && MLX90640_A_GLOBAL_Y < MLX90640_B_GLOBAL_Y) {
+    // A at top-right, B at bottom-left (270deg CCW)
+    float sx = (float)((int)MLX90640_B_GLOBAL_X - (int)MLX90640_A_GLOBAL_X) / (MLX90640_COLUMN_SIZE - 1);
+    float sy = (float)((int)MLX90640_B_GLOBAL_Y - (int)MLX90640_A_GLOBAL_Y) / (MLX90640_LINE_SIZE - 1);
+    *xi_st = (size_t)(MLX90640_A_GLOBAL_X + yi_mlx * sx + 0.5f);
+    *yi_st = (size_t)(MLX90640_A_GLOBAL_Y + xi_mlx * sy + 0.5f);
+  }
 }
+
+// define the index to go in the opposite x-order, because the MLX90640 goes right->left, top-bottom
+#define MLX90640_INDEX(xi, yi) (yi * MLX90640_LINE_SIZE + (MLX90640_LINE_SIZE - 1 - xi))
 
 void st7789_fill_32_24(float *frame) {
   /*
@@ -286,64 +371,53 @@ void st7789_fill_32_24(float *frame) {
   }
 
   /*
-   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   * temperature color mapping and diffing
-   * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   * %%%%%%%%%%%%%%%%%%%%%%%%%
+   * temperature color mapping
+   * %%%%%%%%%%%%%%%%%%%%%%%%%
    */
-  for (size_t xi = 0; xi < MLX90640_LINE_SIZE; xi++) {
-    for (size_t yi = 0; yi < MLX90640_COLUMN_SIZE; yi++) {
-      float pix = frame[yi * MLX90640_LINE_SIZE + xi];
-      // update new_temp_colors to have the newly calculated temperature
-      new_temp_colors[yi * MLX90640_LINE_SIZE + xi] = heatmap_color_rgb565[(size_t)((pix - min_temp) / (max_temp - min_temp) * (N_HEATMAP_COLORS - 1))];
-      // check if this color is updated. If so, update the frame region
-      if (old_temp_colors[yi * MLX90640_LINE_SIZE + xi] != new_temp_colors[yi * MLX90640_LINE_SIZE + xi]) {
-        frame_index_to_screen_region(xi, yi)->changed = true;
-      }
-    }
-  }
-  /*
-   * %%%%%%%%%%%%%%%%%%%%%%%%%%
-   * update st7789 from diffing
-   * %%%%%%%%%%%%%%%%%%%%%%%%%%
-   */
-  for (size_t screen_region_xi = 0; screen_region_xi < N_SCREEN_REGIONS_X; screen_region_xi++) {
-    for (size_t screen_region_yi = 0; screen_region_yi < N_SCREEN_REGIONS_Y; screen_region_yi++) {
-      // check if the frame region was changed. If so, update its rectangle
-      size_t screen_region_index = screen_region_yi * N_SCREEN_REGIONS_X + screen_region_xi;
-      if (screen_regions[screen_region_index].changed) {
-        // find the actual region in pixel coordinates on the screen that the screen region covers
-        uint screen_region_xi0 = screen_region_xi * screen_region_x_pixels;
-        uint screen_region_xi1 = (screen_region_xi + 1) * screen_region_x_pixels - 1;
-        uint screen_region_yi0 = screen_region_yi * screen_region_y_pixels;
-        uint screen_region_yi1 = (screen_region_yi + 1) * screen_region_y_pixels - 1;
-        // set the window sized to the frame we're using and write to its ram
-        st7789_framebuf_set_window(screen_region_xi0, screen_region_yi0, screen_region_xi1, screen_region_yi1);
-        // load buffer with frame_region
-        uint16_t screen_region_colors_buf[screen_region_x_pixels * screen_region_y_pixels];
-        for (size_t screen_region_colors_buf_xi = 0; screen_region_colors_buf_xi < screen_region_x_pixels; screen_region_colors_buf_xi++) {
-          for (size_t screen_region_colors_buf_yi = 0; screen_region_colors_buf_yi < screen_region_y_pixels; screen_region_colors_buf_yi++) {
-            // multiply by scale to go from screen_region_xi -> mlx90640 index
-            // add screen_region_colors_buf_xi and screen_region_colors_buf_yi to find exact mlx90640 pixel
-            size_t mlx90640_xi = (screen_region_xi0 + screen_region_colors_buf_xi) * ((float)MLX90640_LINE_SIZE / (float)ST7789_LINE_SIZE);
-            size_t mlx90640_yi = (screen_region_yi0 + screen_region_colors_buf_yi) * ((float)MLX90640_COLUMN_SIZE / (float)ST7789_COLUMN_SIZE);
-            screen_region_colors_buf[screen_region_colors_buf_yi * screen_region_x_pixels + screen_region_colors_buf_xi] = new_temp_colors[mlx90640_yi * MLX90640_LINE_SIZE + mlx90640_xi];
-          }
-        }
-        // now that entire buffer is loaded for the screen region, let's just write it
-        // note that screen_region_colors_buf is now mutated, and we must ignore its value until the next iteration
-        st7789_framebuf_write_data_words(screen_region_colors_buf, screen_region_x_pixels * screen_region_y_pixels);
-      }
-    }
-  }
-  st7789_framebuf_fill_rect(10, 10, 15, ST7789_COLUMN_SIZE - 10, WHITE);
+  for (size_t mlx90640_yi = 0; mlx90640_yi < MLX90640_COLUMN_SIZE; mlx90640_yi++) {
+    for (size_t mlx90640_xi = 0; mlx90640_xi < MLX90640_LINE_SIZE; mlx90640_xi++) {
+      // calcualte heatmap color index based on range of mlx90640 color values in frame
+      float pix = frame[MLX90640_INDEX(mlx90640_xi,mlx90640_yi)];
+      size_t heatmap_color_rgb565_ind = (size_t)((pix - min_temp) / (max_temp - min_temp) * (N_HEATMAP_COLORS - 1));
 
-  // write with transparent background
-  st7789_framebuf_write_string(0, 0, "Hi Hanooshram.", WHITE, BLACK, false);
+      // fetch newly calculated color from heatmap array
+      uint16_t heatmap_color_rgb565_value = heatmap_color_rgb565[heatmap_color_rgb565_ind];
+
+      // grab coordinates of window in st7789 space
+      size_t st7789_x0 = 0;
+      size_t st7789_y0 = 0;
+      mlx90640_xy_to_st7789_xy(mlx90640_xi, mlx90640_yi, &st7789_x0, &st7789_y0);
+      size_t st7789_x1 = 0;
+      size_t st7789_y1 = 0;
+      mlx90640_xy_to_st7789_xy(mlx90640_xi+1, mlx90640_yi+1, &st7789_x1, &st7789_y1);
+
+      // update st7789 framebuffer with newly calculated color
+      st7789_framebuf_fill_rect(
+        st7789_x0,
+        st7789_y0,
+        st7789_x1,
+        st7789_y1,
+        heatmap_color_rgb565_value
+      );
+    }
+  }
+
+  st7789_framebuf_fill_rect(10, 10, 15, ST7789_COLUMN_SIZE - 10, WHITE);
 
   // now that we've done all of our transformations, flush the frame buffer
   st7789_framebuf_flush();
 }
 
 void st7789_fill_circ(uint x, uint y, uint r, uint16_t color) {
-  // FIXME
+  // draw center first, this avoids division by 0
+  st7789_framebuf_draw_pixel(x, y, color);
+  // draw a bunch of concentric circles incrementing by dtheta(r) = 1/r, which
+  // is to maintain approximately 1 pixel arc length along the circle
+  for (size_t ri = 1; ri <= r; ri++) {
+    for (float theta = 0.0f; theta <= 2 * M_PI; theta += 1.0f/((float)r)) {
+      st7789_framebuf_draw_pixel(x + (int)((float)ri * cos(theta)), y + (int)((float)ri * sin(theta)), color);
+    }
+  }
+  st7789_framebuf_flush();
 }

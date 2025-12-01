@@ -1,3 +1,10 @@
+/*
+ * st7789_framebuf.c
+ *
+ * @copyright Copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
+ * Licensed under the Apache License, Version 2.0.
+ */
+
 #include "st7789.h"
 #include <stdlib.h>
 #include "fonts.h"
@@ -7,6 +14,9 @@
  * @brief define the frame buffer for the st7789
  */
 static uint16_t framebuf[ST7789_LINE_SIZE * ST7789_COLUMN_SIZE];
+/*
+ * @brief define the ram window of the frame buffer.
+ */
 static size_t framebuf_window_x0 = 0;
 static size_t framebuf_window_y0 = 0;
 static size_t framebuf_window_x1 = 0;
@@ -19,11 +29,23 @@ void st7789_framebuf_flush(void) {
   st7789_write_data_words(framebuf, ST7789_LINE_SIZE * ST7789_COLUMN_SIZE);
 }
 
+inline void st7789_clip_pixel_vals(uint *_x, uint *_y) {
+  // keep values within range
+  if (*_x >= ST7789_LINE_SIZE) *_x = ST7789_LINE_SIZE-1;
+  if (*_y >= ST7789_COLUMN_SIZE) *_y = ST7789_COLUMN_SIZE-1;
+}
+
 void st7789_framebuf_draw_pixel(uint x, uint y, uint16_t color) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x, &y);
   framebuf[FRAMEBUF_INDEX(x, y)] = color;
 }
 
 void st7789_framebuf_set_window(size_t x0, size_t y0, size_t x1, size_t y1) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x0, &y0);
+  st7789_clip_pixel_vals(&x1, &y1);
+
   framebuf_window_x0 = x0;
   framebuf_window_y0 = y0;
   framebuf_window_x1 = x1;
@@ -41,6 +63,9 @@ void st7789_framebuf_write_data_words(uint16_t *words, size_t len) {
 }
 
 void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x0, &y0);
+
   st7789_framebuf_set_window(x0, y0, x0 + FONT_W - 1, y0 + FONT_H - 1);
   for (uint32_t i = 0; i < FONT_H; i++) {
     uint8_t bitmap_row = thefont[(c - 32) * FONT_H + i];
@@ -61,6 +86,8 @@ void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16
 }
 
 void st7789_framebuf_write_string(uint x0, uint y0, const char *s, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x0, &y0);
   char *p = (char *)s;
   int i = 0;
   while (*p) {
@@ -79,6 +106,10 @@ void st7789_framebuf_write_string(uint x0, uint y0, const char *s, uint16_t colo
  * @brief Draw a line on using Bresenham's line algorithm.
  */
 void st7789_framebuf_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x0, &y0);
+  st7789_clip_pixel_vals(&x1, &y1);
+
   // use Bresenham's line algorithm (source: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
 
   int dx = abs((int)x1 - (int)x0);
@@ -115,6 +146,9 @@ void st7789_framebuf_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t colo
  * @brief Fill a rect in the framebuffer.
  */
 void st7789_framebuf_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
+  // keep values within range
+  st7789_clip_pixel_vals(&x0, &y0);
+  st7789_clip_pixel_vals(&x1, &y1);
   // switch values if they are reversed
   if (x1 < x0) {
     uint tmp = x0;

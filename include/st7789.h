@@ -1,3 +1,12 @@
+/*
+ * st7789.h
+ *
+ * @brief Defines control functions and headers related to using the ST7789.
+ *
+ * @copyright Copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
+ * Licensed under the Apache License, Version 2.0.
+ */
+
 #ifndef _ST7789_H
 #define _ST7789_H
 
@@ -18,7 +27,7 @@
 #define WHITE RGB565(255, 255, 255)
 #define RED   RGB565(255, 0,   0)
 #define BLUE  RGB565(0,   0,   255)
-//
+
 // command definitions (source: Shifeng Li <https://github.com/libdriver/st7789/blob/main/src/driver_st7789.c#L61-L124>)
 #define ST7789_CMD_NOP             0x00        // no operation command
 #define ST7789_CMD_SWRESET         0x01        // software reset command
@@ -128,6 +137,12 @@ void st7789_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t color);
  */
 void st7789_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color);
 /*
+ * st7789_loading_ani_tick
+ *
+ * @brief Tick one iteration of the loading animation
+ */
+void st7789_loading_ani_tick(void);
+/*
  * st7789_fill_32_24
  *
  * @brief Fill the entire screen given frame data from the MLX90640.
@@ -136,7 +151,7 @@ void st7789_fill_32_24(float *frame);
 /*
  * st7789_fill_circ
  *
- * @brief Fill a circle with origin at (x,y), radius r, and the given color.
+ * @brief Fill a circle with origin at (x,y), radius r, and the given color in THE SLOWEST WAY POSSIBLE.
  */
 void st7789_fill_circ(uint x, uint y, uint r, uint16_t color);
 

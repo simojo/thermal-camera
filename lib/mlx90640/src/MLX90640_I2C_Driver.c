@@ -1,4 +1,4 @@
-/**
+/*
  * @copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
  */
 

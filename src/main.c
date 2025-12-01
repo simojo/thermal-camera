@@ -1,3 +1,10 @@
+/*
+ * main.c
+ *
+ * @copyright Copyright (C) 2025 Simon J. Jones <github@simonjjones.com>
+ * Licensed under the Apache License, Version 2.0.
+ */
+
 #include <pico/stdio.h>
 #include <math.h>
 #include <stdio.h>
@@ -11,20 +18,7 @@
 #include "pico/mutex.h"
 
 #define MLX90640_ADDR 0x33
-
-const char *heatmap_ascii = " .:-=+*#%@";
-const uint16_t heatmap_color[] = {
-    RGB565(20,  20,  60),
-    RGB565(45,  35,  90),
-    RGB565(70,  50,  120),
-    RGB565(110, 75,  140),
-    RGB565(155, 100, 130),
-    RGB565(200, 125, 100),
-    RGB565(230, 160, 75),
-    RGB565(245, 190, 90),
-    RGB565(255, 220, 140),
-    RGB565(255, 250, 200),
-};
+#define INITIAL_DELAY_MS 6000
 
 static uint16_t eeData[MLX90640_EEPROM_DUMP_NUM];
 
@@ -44,8 +38,20 @@ volatile bool frameTemperatureChanged = false;
 void core1_main() {
   // clear the st7789 display
   st7789_init();
-  st7789_framebuf_fill_rect(0, 0, 319, 239, BLACK);
-  st7789_framebuf_flush();
+
+  // display a loading animation while core0 starts up.
+  uint32_t t0_ms = time_us_32() / 1000;
+  uint32_t t1_ms = t0_ms;
+  uint32_t loading_ani_t0_ms = t0_ms;
+  const unsigned int loading_ani_tick_period_ms = 200;
+  while (t1_ms - t0_ms < INITIAL_DELAY_MS) {
+    t1_ms = time_us_32() / 1000;
+    // each 200ms, tick the loading animation
+    if (t1_ms - loading_ani_t0_ms > loading_ani_tick_period_ms) {
+      st7789_loading_ani_tick();
+      loading_ani_t0_ms = time_us_32() / 1000;
+    }
+  }
 
   while (1) {
     mutex_enter_blocking(&mutex);
@@ -64,17 +70,8 @@ int main() {
   mutex_init(&mutex);
   multicore_launch_core1(core1_main);
 
-  for (int i = 0; i < 3; i++) {
-    printf("\rO o o o");
-    sleep_ms(500);
-    printf("\ro O o o");
-    sleep_ms(500);
-    printf("\ro o O o");
-    sleep_ms(500);
-    printf("\ro o o O");
-    sleep_ms(500);
-  }
-  printf("\r\n");
+  // add delay for the camera to start up
+  sleep_ms(INITIAL_DELAY_MS);
 
   printf("[INFO] set refresh rate.\n");
   MLX90640_SetChessMode(MLX90640_ADDR);
@@ -100,6 +97,7 @@ int main() {
   uint16_t frameTemperatureColorsRGB565[MLX90640_PIXEL_NUM];
 
   while (1) {
+
     int subpage = 0;
     subpage = MLX90640_GetFrameData(MLX90640_ADDR, frameData);
     // 0, 1 are valid subpge return values. anything else implies error
