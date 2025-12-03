@@ -16,10 +16,6 @@
 #include "st7789_framebuf.h"
 #include "pico/multicore.h"
 #include "pico/mutex.h"
-#include "pico/cyw43_arch.h"
-#include "hardware/vreg.h"
-#include "hardware/clocks.h"
-#include "wifi_scan.h"
 
 #define MLX90640_ADDR 0x33
 #define INITIAL_DELAY_MS 6000
@@ -69,59 +65,8 @@ void core1_main() {
   }
 }
 
-    printf("Press 'q' to quit\n");
-    cyw43_arch_enable_sta_mode();
-
-    // Start a scan immediately
-    bool scan_started = false;
-    async_at_time_worker_t scan_worker = { .do_work = scan_worker_fn, .user_data = &scan_started };
-    hard_assert(async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &scan_worker, 0));
-
-    bool exit = false;
-    while(!exit) {
-        int key = getchar_timeout_us(0);
-        if (key == 'q' || key == 'Q') {
-            exit = true;
-        }
-        if (!cyw43_wifi_scan_active(&cyw43_state) && scan_started) {
-            // Start a scan in 10s
-            scan_started = false;
-            hard_assert(async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &scan_worker, 10000));
-        }
-        // the following #ifdef is only here so this same example can be used in multiple modes;
-        // you do not need it in your code
-#if PICO_CYW43_ARCH_POLL
-        // if you are using pico_cyw43_arch_poll, then you must poll periodically from your
-        // main loop (not from a timer) to check for Wi-Fi driver or lwIP work that needs to be done.
-        cyw43_arch_poll();
-        // you can poll as often as you like, however if you have nothing else to do you can
-        // choose to sleep until either a specified time, or cyw43_arch_poll() has work to do:
-        cyw43_arch_wait_for_work_until(at_the_end_of_time);
-#else
-        // if you are not using pico_cyw43_arch_poll, then WiFI driver and lwIP work
-        // is done via interrupt in the background. This sleep is just an example of some (blocking)
-        // work you might be doing.
-        sleep_ms(1000);
-#endif
-    }
-
-    cyw43_arch_deinit();
-
 int main() {
   stdio_init_all();
-
-  // NOTE: WIFI
-  if (cyw43_arch_init()) {
-      printf("failed to initialise wifi\n");
-      return 1;
-  }
-  cyw43_arch_enable_sta_mode();
-
-  // NOTE: WIFI
-  // start a scan immediately
-  bool scan_started = false;
-  async_at_time_worker_t scan_worker = { .do_work = scan_worker_fn, .user_data = &scan_started };
-  hard_assert(async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &scan_worker, 0));
 
   // initialize the mutex and launch core for handling st7789
   mutex_init(&mutex);
@@ -155,12 +100,6 @@ int main() {
   uint16_t frameTemperatureColorsRGB565[MLX90640_PIXEL_NUM];
 
   while (1) {
-    // NOTE: WIFI
-    if (!cyw43_wifi_scan_active(&cyw43_state) && scan_started) {
-        // Start a scan in 10s
-        scan_started = false;
-        hard_assert(async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &scan_worker, 10000));
-    }
 
     int subpage = 0;
     subpage = MLX90640_GetFrameData(MLX90640_ADDR, frameData);
