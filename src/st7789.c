@@ -248,8 +248,9 @@ void st7789_fill_rect(uint x0, uint y0, uint x1, uint y1, uint16_t color) {
 
 static uint8_t st7789_loading_ani_state = 0;
 #define ST7789_LOADING_ANI_N_STATES 7
+#define ST7789_LOADING_ANI_N_LINES 6
 #define ST7789_LOADING_ANI_N_CHARS 13
-static const char st7789_loading_ani_words[ST7789_LOADING_ANI_N_STATES][ST7789_LOADING_ANI_N_CHARS] = {
+static const char st7789_loading_ani_words[ST7789_LOADING_ANI_N_STATES][ST7789_LOADING_ANI_N_CHARS+1] = {
   "   Loading   ",
   "  <Loading>  ",
   " <<Loading>> ",
@@ -262,7 +263,7 @@ void st7789_loading_ani_tick(void) {
   size_t center_x = ST7789_LINE_SIZE / 2;
   size_t center_y = ST7789_COLUMN_SIZE / 2;
   size_t r0 = 10;
-  size_t r1 = 20;
+  size_t r1 = 30;
 
   // first clear the framebuf
   st7789_framebuf_fill_rect(0, 0, ST7789_LINE_SIZE-1, ST7789_COLUMN_SIZE-1, BLACK);
@@ -272,19 +273,42 @@ void st7789_loading_ani_tick(void) {
     ST7789_LINE_SIZE/2 - ST7789_LOADING_ANI_N_CHARS/2 * FONT_W,
     FONT_H * 2,
     st7789_loading_ani_words[st7789_loading_ani_state % ST7789_LOADING_ANI_N_STATES],
+    ST7789_LOADING_ANI_N_CHARS,
     WHITE,
     BLACK,
     true
   );
 
-  float theta = st7789_loading_ani_state * M_PI / ST7789_LOADING_ANI_N_STATES;
-  st7789_framebuf_draw_line(
-    center_x + r0 * (size_t)cos(theta),
-    center_y + r0 * (size_t)sin(theta),
-    center_x + r1 * (size_t)cos(theta),
-    center_y + r1 * (size_t)sin(theta),
-    WHITE
+  st7789_framebuf_write_string(
+    ST7789_LINE_SIZE/2 - 11 * FONT_W,
+    ST7789_COLUMN_SIZE-3*FONT_H,
+    "Made by Simon J. Jones",
+    22,
+    WHITE,
+    BLACK,
+    true
   );
+  st7789_framebuf_write_string(
+    ST7789_LINE_SIZE/2 - 4 * FONT_W,
+    ST7789_COLUMN_SIZE-2*FONT_H,
+    "(C) 2025",
+    8,
+    WHITE,
+    BLACK,
+    true
+  );
+
+  float theta = (float)st7789_loading_ani_state / ST7789_LOADING_ANI_N_STATES * (M_PI / 3.0f);
+  for (int i = 0; i < ST7789_LOADING_ANI_N_STATES; i++) {
+    float theta_shift = (float)i / ST7789_LOADING_ANI_N_LINES * 2 * M_PI;
+    st7789_framebuf_draw_line(
+      center_x + r0 * cos(theta + theta_shift),
+      center_y + r0 * sin(theta + theta_shift),
+      center_x + r1 * cos(theta + theta_shift),
+      center_y + r1 * sin(theta + theta_shift),
+      WHITE
+    );
+  }
 
   st7789_loading_ani_state = (st7789_loading_ani_state + 1) % ST7789_LOADING_ANI_N_STATES;
 
@@ -312,7 +336,7 @@ void st7789_loading_ani_tick(void) {
  */
 #define MLX90640_A_GLOBAL_X (ST7789_LINE_SIZE-1)
 #define MLX90640_A_GLOBAL_Y (0)
-#define MLX90640_B_GLOBAL_X (ST7789_LINE_SIZE/2)
+#define MLX90640_B_GLOBAL_X (ST7789_LINE_SIZE/2-30)
 #define MLX90640_B_GLOBAL_Y (ST7789_COLUMN_SIZE-1)
 
 /*
@@ -351,9 +375,24 @@ void mlx90640_xy_to_st7789_xy(size_t xi_mlx, size_t yi_mlx, size_t *xi_st, size_
 }
 
 // define the index to go in the opposite x-order, because the MLX90640 goes right->left, top-bottom
-#define MLX90640_INDEX(xi, yi) (yi * MLX90640_LINE_SIZE + (MLX90640_LINE_SIZE - 1 - xi))
+#define MLX90640_INDEX(xi, yi) ((yi) * MLX90640_LINE_SIZE + (MLX90640_LINE_SIZE - 1 - (xi)))
+
+uint32_t st7789_fill_32_24_fps_estimate_t0 = 0;
+uint32_t st7789_fill_32_24_fps_estimate_t1 = 0;
 
 void st7789_fill_32_24(float *frame) {
+  /*
+   * %%%%%%%%%%%%%%
+   * FPS estimation
+   * %%%%%%%%%%%%%%
+   */
+  st7789_fill_32_24_fps_estimate_t1 = time_us_32() / 1000;
+  char fps_buf[32];
+  float fps_estimate = 1000.0f/(st7789_fill_32_24_fps_estimate_t1 - st7789_fill_32_24_fps_estimate_t0);
+  snprintf(fps_buf, 32, "FPS: %3.2f", fps_estimate);
+  st7789_framebuf_write_string(10, 10, fps_buf, 32, WHITE, BLACK, false);
+  st7789_fill_32_24_fps_estimate_t0 = st7789_fill_32_24_fps_estimate_t1;
+
   /*
    * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    * calculate min and max temperature values
@@ -369,14 +408,19 @@ void st7789_fill_32_24(float *frame) {
       min_temp = frame[i];
     }
   }
+  char temp_buf[12];
+  snprintf(temp_buf, 11+1, "Max: % 5.2f", max_temp);
+  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2-FONT_H, temp_buf, 11+1, WHITE, heatmap_color_rgb565[N_HEATMAP_COLORS-1], false);
+  snprintf(temp_buf, 11+1, "Min: % 5.2f", min_temp);
+  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2, temp_buf, 11+1, WHITE, heatmap_color_rgb565[0], false);
 
   /*
    * %%%%%%%%%%%%%%%%%%%%%%%%%
    * temperature color mapping
    * %%%%%%%%%%%%%%%%%%%%%%%%%
    */
-  for (size_t mlx90640_yi = 0; mlx90640_yi < MLX90640_COLUMN_SIZE; mlx90640_yi++) {
-    for (size_t mlx90640_xi = 0; mlx90640_xi < MLX90640_LINE_SIZE; mlx90640_xi++) {
+  for (size_t mlx90640_yi = 0; mlx90640_yi < (MLX90640_COLUMN_SIZE-1); mlx90640_yi++) {
+    for (size_t mlx90640_xi = 0; mlx90640_xi < (MLX90640_LINE_SIZE-1); mlx90640_xi++) {
       // calcualte heatmap color index based on range of mlx90640 color values in frame
       float pix = frame[MLX90640_INDEX(mlx90640_xi,mlx90640_yi)];
       size_t heatmap_color_rgb565_ind = (size_t)((pix - min_temp) / (max_temp - min_temp) * (N_HEATMAP_COLORS - 1));
@@ -402,8 +446,6 @@ void st7789_fill_32_24(float *frame) {
       );
     }
   }
-
-  st7789_framebuf_fill_rect(10, 10, 15, ST7789_COLUMN_SIZE - 10, WHITE);
 
   // now that we've done all of our transformations, flush the frame buffer
   st7789_framebuf_flush();

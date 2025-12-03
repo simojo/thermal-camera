@@ -50,7 +50,7 @@ void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16
  *
  * @brief Write a string to the frame buffer at the given location.
  */
-void st7789_framebuf_write_string(uint x0, uint y0, const char *s, uint16_t color, uint16_t bgcolor, bool bgtransparent);
+void st7789_framebuf_write_string(uint x0, uint y0, const char *s, size_t len, uint16_t color, uint16_t bgcolor, bool bgtransparent);
 /*
  * st7789_draw_line
  *

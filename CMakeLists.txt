@@ -15,6 +15,8 @@ pico_sdk_init()
 
 add_subdirectory(lib/mlx90640)
 
+set(CMAKE_BUILD_REPRODUCIBLE OFF)
+
 add_executable(thermal-camera
   src/fonts.c
   src/main.c
@@ -33,6 +35,7 @@ target_link_libraries(thermal-camera
   hardware_clocks
   hardware_pio
   hardware_i2c
+  pico_cyw43_arch_lwip_threadsafe_background
   mlx90640
 )
 

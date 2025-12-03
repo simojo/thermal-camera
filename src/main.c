@@ -43,7 +43,7 @@ void core1_main() {
   uint32_t t0_ms = time_us_32() / 1000;
   uint32_t t1_ms = t0_ms;
   uint32_t loading_ani_t0_ms = t0_ms;
-  const unsigned int loading_ani_tick_period_ms = 200;
+  const unsigned int loading_ani_tick_period_ms = 10;
   while (t1_ms - t0_ms < INITIAL_DELAY_MS) {
     t1_ms = time_us_32() / 1000;
     // each 200ms, tick the loading animation
@@ -52,6 +52,8 @@ void core1_main() {
       loading_ani_t0_ms = time_us_32() / 1000;
     }
   }
+  // clear any remaining loading animations
+  st7789_framebuf_fill_rect(0, 0, ST7789_LINE_SIZE-1, ST7789_COLUMN_SIZE-1, BLACK);
 
   while (1) {
     mutex_enter_blocking(&mutex);

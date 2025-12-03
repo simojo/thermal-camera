@@ -8,6 +8,7 @@
 #include "st7789.h"
 #include <stdlib.h>
 #include "fonts.h"
+#include "stdio.h"
 #include <math.h>
 
 /*
@@ -21,7 +22,7 @@ static size_t framebuf_window_x0 = 0;
 static size_t framebuf_window_y0 = 0;
 static size_t framebuf_window_x1 = 0;
 static size_t framebuf_window_y1 = 0;
-#define FRAMEBUF_INDEX(xi, yi) yi * ST7789_LINE_SIZE + xi
+#define FRAMEBUF_INDEX(xi, yi) (yi) * ST7789_LINE_SIZE + (xi)
 
 void st7789_framebuf_flush(void) {
   st7789_set_window(0, 0, ST7789_LINE_SIZE-1, ST7789_COLUMN_SIZE-1);
@@ -29,10 +30,16 @@ void st7789_framebuf_flush(void) {
   st7789_write_data_words(framebuf, ST7789_LINE_SIZE * ST7789_COLUMN_SIZE);
 }
 
-static inline void st7789_clip_pixel_vals(uint *_x, uint *_y) {
+static void st7789_clip_pixel_vals(uint *_x, uint *_y) {
   // keep values within range
-  if (*_x >= ST7789_LINE_SIZE) *_x = ST7789_LINE_SIZE-1;
-  if (*_y >= ST7789_COLUMN_SIZE) *_y = ST7789_COLUMN_SIZE-1;
+  if (*_x >= ST7789_LINE_SIZE) {
+    printf("x was out of bounds: %d\n", *_x);
+    *_x = ST7789_LINE_SIZE-1;
+  }
+  if (*_y >= ST7789_COLUMN_SIZE) {
+    printf("y was out of bounds: %d\n", *_y);
+    *_y = ST7789_COLUMN_SIZE-1;
+  }
 }
 
 void st7789_framebuf_draw_pixel(uint x, uint y, uint16_t color) {
@@ -66,7 +73,6 @@ void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16
   // keep values within range
   st7789_clip_pixel_vals(&x0, &y0);
 
-  st7789_framebuf_set_window(x0, y0, x0 + FONT_W - 1, y0 + FONT_H - 1);
   for (uint32_t i = 0; i < FONT_H; i++) {
     uint8_t bitmap_row = thefont[(c - 32) * FONT_H + i];
     for (uint32_t j = 0; j < FONT_W; j++) {
@@ -85,18 +91,22 @@ void st7789_framebuf_write_char(uint x0, uint y0, char c, uint16_t color, uint16
   }
 }
 
-void st7789_framebuf_write_string(uint x0, uint y0, const char *s, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
+void st7789_framebuf_write_string(uint x0, uint y0, const char *s, size_t len, uint16_t color, uint16_t bgcolor, bool bgtransparent) {
   // keep values within range
   st7789_clip_pixel_vals(&x0, &y0);
-  char *p = (char *)s;
-  int i = 0;
-  while (*p) {
-    // on line breaks, increment us down a line
-    if (*p == '\n') {
-      y0 += FONT_H;
+  int line_width = 0;
+  for (int i = 0; i < len; i++) {
+    if (s[i] == '\0') {
+      break;
     }
-    st7789_framebuf_write_char(x0 + i * FONT_W, y0, *p++, color, bgcolor, bgtransparent);
-    i++;
+    // on line breaks, increment us down a line
+    if (s[i] == '\n') {
+      y0 += FONT_H;
+      line_width = 0;
+      continue;
+    }
+    st7789_framebuf_write_char(x0 + line_width * FONT_W, y0, s[i], color, bgcolor, bgtransparent);
+    line_width++;
   }
 }
 
@@ -122,7 +132,7 @@ void st7789_framebuf_draw_line(uint x0, uint y0, uint x1, uint y1, uint16_t colo
 
   // modify x0,y0 directly because we passed by value
   while (1) {
-    st7789_draw_pixel(x0, y0, color);
+    st7789_framebuf_draw_pixel(x0, y0, color);
 
     if (x0 == x1 && y0 == y1) {
       break;
