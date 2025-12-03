@@ -4,9 +4,10 @@ cmake_minimum_required(VERSION 3.13...3.27)
 # note: this must happen before project()
 include(pico-sdk/pico_sdk_init.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(PICO_CYW43_ARCH_THREADSAFE_BACKGROUND)
 
 set(CMAKE_C_FLAGS_DEBUG "-Og -g3 -fno-inline -fno-omit-frame-pointer")
-set(PICO_BOARD pico)
+set(PICO_BOARD pico_w)
 
 project(thermal-camera)
 
@@ -15,13 +16,12 @@ pico_sdk_init()
 
 add_subdirectory(lib/mlx90640)
 
-set(CMAKE_BUILD_REPRODUCIBLE OFF)
-
 add_executable(thermal-camera
   src/fonts.c
   src/main.c
   src/st7789.c
   src/st7789_framebuf.c
+  src/wifi_scan.c
 )
 
 target_include_directories(thermal-camera PUBLIC
@@ -30,12 +30,12 @@ target_include_directories(thermal-camera PUBLIC
 
 target_link_libraries(thermal-camera
   pico_stdlib
+  pico_cyw43_arch_lwip_threadsafe_background
   pico_multicore
   hardware_spi
   hardware_clocks
   hardware_pio
   hardware_i2c
-  pico_cyw43_arch_lwip_threadsafe_background
   mlx90640
 )
 
