@@ -400,7 +400,9 @@ void st7789_fill_32_24(float *frame) {
    */
   float max_temp = -INFINITY;
   float min_temp = INFINITY;
+  float avg_temp = 0;
   for (int i = 0; i < MLX90640_PIXEL_NUM; i++) {
+    avg_temp += frame[i];
     if (frame[i] > max_temp) {
       max_temp = frame[i];
     }
@@ -408,11 +410,17 @@ void st7789_fill_32_24(float *frame) {
       min_temp = frame[i];
     }
   }
-  char temp_buf[12];
-  snprintf(temp_buf, 11+1, "Max: % 5.2f", max_temp);
-  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2-FONT_H, temp_buf, 11+1, WHITE, heatmap_color_rgb565[N_HEATMAP_COLORS-1], false);
-  snprintf(temp_buf, 11+1, "Min: % 5.2f", min_temp);
-  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2, temp_buf, 11+1, WHITE, heatmap_color_rgb565[0], false);
+  avg_temp /= MLX90640_PIXEL_NUM;
+  char temp_buf[14];
+  snprintf(temp_buf, 13+1, "Max: % 5.2f C", max_temp);
+  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2-FONT_H, temp_buf, 13+1, WHITE, heatmap_color_rgb565[N_HEATMAP_COLORS-1], false);
+  snprintf(temp_buf, 13+1, "Min: % 5.2f C", min_temp);
+  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2, temp_buf, 13+1, WHITE, heatmap_color_rgb565[0], false);
+
+  // calculate heatmap color of average temperature
+  size_t avg_heatmap_color_rgb565_ind = (size_t)((avg_temp - min_temp) / (max_temp - min_temp) * (N_HEATMAP_COLORS - 1));
+  snprintf(temp_buf, 13+1, "Avg: % 5.2f C", avg_temp);
+  st7789_framebuf_write_string(10, ST7789_COLUMN_SIZE/2+FONT_H, temp_buf, 13+1, heatmap_color_rgb565[avg_heatmap_color_rgb565_ind], BLACK, false);
 
   /*
    * %%%%%%%%%%%%%%%%%%%%%%%%%

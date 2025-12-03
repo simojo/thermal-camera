@@ -6,7 +6,7 @@ include(pico-sdk/pico_sdk_init.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_FLAGS_DEBUG "-Og -g3 -fno-inline -fno-omit-frame-pointer")
-set(PICO_BOARD pico)
+set(PICO_BOARD pico_w)
 
 project(thermal-camera)
 
@@ -14,8 +14,6 @@ project(thermal-camera)
 pico_sdk_init()
 
 add_subdirectory(lib/mlx90640)
-
-set(CMAKE_BUILD_REPRODUCIBLE OFF)
 
 add_executable(thermal-camera
   src/fonts.c
@@ -35,7 +33,6 @@ target_link_libraries(thermal-camera
   hardware_clocks
   hardware_pio
   hardware_i2c
-  pico_cyw43_arch_lwip_threadsafe_background
   mlx90640
 )
 
