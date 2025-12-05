@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "MCU")(type "KiCad")(uri "${KIPRJMOD}/Raspberry_Pi_Pico_W/MCU.pretty")(options "")(descr ""))
+  (lib (name "Camera")(type "KiCad")(uri "${KIPRJMOD}/Raspberry_Pi_Pico_W/Camera.pretty")(options "")(descr ""))
+)
