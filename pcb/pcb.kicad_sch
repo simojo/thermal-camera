@@ -147,6 +147,149 @@
 				)
 			)
 		)
+		(symbol "Battery_Management:TP4056"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "TP"
+				(at 2.54 2.794 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "TP4056_0_1"
+				(rectangle
+					(start -6.35 7.62)
+					(end 6.35 -7.62)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "TP4056_1_1"
+				(text "TP4056\n"
+					(at 2.286 0.254 0)
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(pin power_out line
+					(at -8.89 3.81 0)
+					(length 2.54)
+					(name "OUT+"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -8.89 1.27 0)
+					(length 2.54)
+					(name "B+"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -8.89 -1.27 0)
+					(length 2.54)
+					(name "B-"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at -8.89 -3.81 0)
+					(length 2.54)
+					(name "OUT-"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Device:Battery_Cell"
 			(pin_numbers hide)
 			(pin_names
@@ -2501,10 +2644,22 @@
 		(uuid "1165501b-c3ae-4cdd-80a0-d808cf38116a")
 	)
 	(junction
+		(at 217.17 109.22)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1391646a-c9da-4b69-836d-2acdd805c850")
+	)
+	(junction
 		(at 78.74 97.79)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "1b834a9f-c632-4fdb-86c8-9baefbba5fa5")
+	)
+	(junction
+		(at 217.17 90.17)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "24fce71d-6fa5-4fbc-bb7a-ca9fc3331316")
 	)
 	(junction
 		(at 256.54 90.17)
@@ -2513,10 +2668,10 @@
 		(uuid "4ff8bd74-fff4-4600-acf5-3075e9e51af2")
 	)
 	(junction
-		(at 217.17 109.22)
+		(at 69.85 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "881e1d18-b55e-4fab-b79c-2e38e16923af")
+		(uuid "858cb1da-5a94-40fe-ac42-3144a49d515a")
 	)
 	(junction
 		(at 69.85 77.47)
@@ -2559,12 +2714,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ebb46330-4445-44ad-b84d-e1f8a9db84d5")
-	)
-	(junction
-		(at 217.17 90.17)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f1d56cef-1cf9-4a0f-bc19-db5b3741c571")
 	)
 	(no_connect
 		(at 86.36 85.09)
@@ -2708,6 +2857,16 @@
 	)
 	(wire
 		(pts
+			(xy 69.85 78.74) (xy 69.85 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05b62bb0-2e65-4342-ae4f-bf705e0af53c")
+	)
+	(wire
+		(pts
 			(xy 81.28 92.71) (xy 81.28 97.79)
 		)
 		(stroke
@@ -2755,6 +2914,36 @@
 			(type default)
 		)
 		(uuid "24e1cf7a-9304-4ac4-a3cc-92c9424c690a")
+	)
+	(wire
+		(pts
+			(xy 194.31 100.33) (xy 194.31 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "265e1042-0fc4-4a09-80bc-102769ab9ee2")
+	)
+	(wire
+		(pts
+			(xy 195.58 95.25) (xy 195.58 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a3949ba-5f1d-4b38-a6d2-02c9fe484ccc")
+	)
+	(wire
+		(pts
+			(xy 191.77 106.68) (xy 191.77 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a410a79-07a9-4b64-8da6-cdbcbaaf87f8")
 	)
 	(wire
 		(pts
@@ -2818,6 +3007,16 @@
 	)
 	(wire
 		(pts
+			(xy 191.77 91.44) (xy 191.77 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "418e6b69-d880-4e17-9744-3c0a0cc13aac")
+	)
+	(wire
+		(pts
 			(xy 170.18 85.09) (xy 170.18 90.17)
 		)
 		(stroke
@@ -2838,13 +3037,13 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 109.22) (xy 217.17 109.22)
+			(xy 191.77 106.68) (xy 194.31 106.68)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "46ee2b25-d6a3-43af-874c-125898fb1ae5")
+		(uuid "468e3a83-fd7b-45da-a408-c49beb57cabb")
 	)
 	(wire
 		(pts
@@ -2878,6 +3077,16 @@
 	)
 	(wire
 		(pts
+			(xy 195.58 90.17) (xy 217.17 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4ddb45af-2ea5-487b-bd6b-9a815ad3417e")
+	)
+	(wire
+		(pts
 			(xy 217.17 109.22) (xy 231.14 109.22)
 		)
 		(stroke
@@ -2905,6 +3114,16 @@
 			(type default)
 		)
 		(uuid "54ebe98a-f130-41d5-92fd-3f381d7c1d46")
+	)
+	(wire
+		(pts
+			(xy 195.58 97.79) (xy 194.31 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "554d62f3-cb58-461b-ad90-157fb597aabc")
 	)
 	(wire
 		(pts
@@ -2965,6 +3184,16 @@
 			(type default)
 		)
 		(uuid "6097bc08-fed7-4a29-9c05-2e27b9ab20ea")
+	)
+	(wire
+		(pts
+			(xy 191.77 91.44) (xy 194.31 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "62deef0e-4169-4777-837f-b9670dc04163")
 	)
 	(wire
 		(pts
@@ -3078,16 +3307,6 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 96.52) (xy 204.47 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "95daf082-8de1-46a8-809a-4e4623df20f7")
-	)
-	(wire
-		(pts
 			(xy 139.7 100.33) (xy 157.48 100.33)
 		)
 		(stroke
@@ -3135,6 +3354,26 @@
 			(type default)
 		)
 		(uuid "ab4d09ca-d6fd-4235-ba02-162d47d6fbe6")
+	)
+	(wire
+		(pts
+			(xy 195.58 102.87) (xy 195.58 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "acadcff2-75bf-4da2-8de1-33e00521295d")
+	)
+	(wire
+		(pts
+			(xy 195.58 109.22) (xy 217.17 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b006a0f7-295f-4aeb-b54a-814e40e91c0f")
 	)
 	(wire
 		(pts
@@ -3318,6 +3557,16 @@
 	)
 	(wire
 		(pts
+			(xy 195.58 100.33) (xy 194.31 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e15e1996-7a30-46e0-b68d-0bed12ca163f")
+	)
+	(wire
+		(pts
 			(xy 78.74 97.79) (xy 68.58 97.79)
 		)
 		(stroke
@@ -3335,6 +3584,16 @@
 			(type default)
 		)
 		(uuid "eec8ab70-9cdd-4968-be4a-49c7335726f2")
+	)
+	(wire
+		(pts
+			(xy 194.31 97.79) (xy 194.31 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f1db6b29-fb15-4088-8ad4-b6f5a53bbdb6")
 	)
 	(wire
 		(pts
@@ -3358,16 +3617,6 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 104.14) (xy 204.47 109.22)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fb9c68a1-538f-49ee-b6a0-7c9dfe6e34d2")
-	)
-	(wire
-		(pts
 			(xy 68.58 95.25) (xy 73.66 95.25)
 		)
 		(stroke
@@ -3375,16 +3624,6 @@
 			(type default)
 		)
 		(uuid "feb78051-a7f7-4262-b0bf-5fe00480ada7")
-	)
-	(wire
-		(pts
-			(xy 204.47 90.17) (xy 217.17 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "feede981-fa58-40f0-b1dd-f0a364c9264c")
 	)
 	(text_box "Power Circuitry"
 		(exclude_from_sim no)
@@ -3405,6 +3644,16 @@
 		)
 		(uuid "701341e2-4e16-441b-b4e7-c33719193861")
 	)
+	(text "MLX90640"
+		(exclude_from_sim no)
+		(at 55.118 94.488 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "bed860d6-38c2-4a3f-b3e8-413905ae2ba5")
+	)
 	(text "Note: For ST7789, decoupling\ncircuitry is internal."
 		(exclude_from_sim no)
 		(at 168.402 130.556 0)
@@ -3414,6 +3663,16 @@
 			)
 		)
 		(uuid "cbf7e8a2-835b-4f78-b0f6-ca5735d9e231")
+	)
+	(text "ST7789"
+		(exclude_from_sim no)
+		(at 168.402 104.394 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "f87b63b9-c4d7-4732-9205-42f3913d86c7")
 	)
 	(symbol
 		(lib_id "Regulator_Linear:LD1117S33TR_SOT223")
@@ -3481,6 +3740,81 @@
 			(project ""
 				(path "/5d721aef-2807-4ff2-ba0d-6e0520bb5796"
 					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Battery_Management:TP4056")
+		(at 204.47 99.06 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "10080c35-f2c7-4a95-ba35-f058ee191acc")
+		(property "Reference" "TP1"
+			(at 205.486 96.266 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "~"
+			(at 212.09 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 204.47 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 204.47 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 204.47 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "63a347f6-bdb9-42d1-9f4a-2f1734cbd420")
+		)
+		(pin "4"
+			(uuid "ef8f69cf-58b0-4fcf-91c9-b1cd97dd4ae5")
+		)
+		(pin "1"
+			(uuid "6103cbc9-b729-4ef1-8c3b-0602cb448241")
+		)
+		(pin "3"
+			(uuid "ca579659-5f96-48bf-860d-e986ab03427d")
+		)
+		(instances
+			(project ""
+				(path "/5d721aef-2807-4ff2-ba0d-6e0520bb5796"
+					(reference "TP1")
 					(unit 1)
 				)
 			)
@@ -4484,7 +4818,7 @@
 	)
 	(symbol
 		(lib_id "Device:Battery_Cell")
-		(at 204.47 101.6 0)
+		(at 191.77 100.33 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -4492,7 +4826,7 @@
 		(dnp no)
 		(uuid "c203f010-3222-4c82-b7ab-446ae3d268b1")
 		(property "Reference" "BT1"
-			(at 197.358 99.06 0)
+			(at 187.198 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4500,8 +4834,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Battery_Cell"
-			(at 189.484 101.346 0)
+		(property "Value" "Battery"
+			(at 186.944 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4510,7 +4844,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 204.47 100.076 90)
+			(at 191.77 98.806 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4519,7 +4853,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 204.47 100.076 90)
+			(at 191.77 98.806 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4528,7 +4862,7 @@
 			)
 		)
 		(property "Description" "Single-cell battery"
-			(at 204.47 101.6 0)
+			(at 191.77 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)

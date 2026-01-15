@@ -388,7 +388,9 @@ void st7789_fill_32_24(float *frame) {
    */
   st7789_fill_32_24_fps_estimate_t1 = time_us_32() / 1000;
   char fps_buf[32];
-  float fps_estimate = 1000.0f/(st7789_fill_32_24_fps_estimate_t1 - st7789_fill_32_24_fps_estimate_t0);
+  uint32_t dt = st7789_fill_32_24_fps_estimate_t1 - st7789_fill_32_24_fps_estimate_t0;
+  if (dt == 0) dt = 1;
+  float fps_estimate = 1000.0f/dt;
   snprintf(fps_buf, 32, "FPS: %3.2f", fps_estimate);
   st7789_framebuf_write_string(10, 10, fps_buf, 32, WHITE, BLACK, false);
   st7789_fill_32_24_fps_estimate_t0 = st7789_fill_32_24_fps_estimate_t1;

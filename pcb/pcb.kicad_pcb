@@ -5877,7 +5877,7 @@
 		(descr "C, Disc series, Radial, pin pitch=2.50mm, , diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 2.50mm  diameter 5mm width 2.5mm Capacitor")
 		(property "Reference" "C3"
-			(at 1.25 -2.5 90)
+			(at 4 -2.5 180)
 			(layer "F.SilkS")
 			(uuid "d0ccbc5b-9263-4018-af89-463235730b6e")
 			(effects

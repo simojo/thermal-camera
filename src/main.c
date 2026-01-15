@@ -20,6 +20,10 @@
 #define MLX90640_ADDR 0x33
 #define INITIAL_DELAY_MS 6000
 
+#define MLX90640_REFRESH_RATE_4HZ 0b011
+#define MLX90640_REFRESH_RATE_8HZ 0b100
+#define MLX90640_REFRESH_RATE_16HZ 0b101
+
 static uint16_t eeData[MLX90640_EEPROM_DUMP_NUM];
 
 paramsMLX90640 mlx90640;
@@ -59,8 +63,8 @@ void core1_main() {
     mutex_enter_blocking(&mutex);
     if (frameTemperatureChanged) {
       st7789_fill_32_24(frameTemperatureCore1);
+      frameTemperatureChanged = false;
     }
-    // critical section
     mutex_exit(&mutex);
   }
 }
@@ -85,8 +89,8 @@ int main() {
     printf("[ERROR] DumpEE returned error.\n");
   }
   printf("[INFO] dumpEE.\n");
-  // set the refresh rate to be 4Hz
-  MLX90640_SetRefreshRate(MLX90640_ADDR, 0b011);
+  // set the refresh rate to be 8Hz
+  MLX90640_SetRefreshRate(MLX90640_ADDR, MLX90640_REFRESH_RATE_8HZ);
 
   // after reading the EEPROM, we can read much faster.
   MLX90640_I2CFreqSet(1000 * 1000);
