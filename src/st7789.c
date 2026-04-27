@@ -334,10 +334,11 @@ void st7789_loading_ani_tick(void) {
 /*
  * @brief define where the MLX90640 A, B markers get placed in the ST7789's screen
  */
-#define MLX90640_A_GLOBAL_X (ST7789_LINE_SIZE-1)
-#define MLX90640_A_GLOBAL_Y (0)
-#define MLX90640_B_GLOBAL_X (ST7789_LINE_SIZE/2-30)
-#define MLX90640_B_GLOBAL_Y (ST7789_COLUMN_SIZE-1)
+
+#define MLX90640_A_GLOBAL_X (ST7789_LINE_SIZE/2-30)
+#define MLX90640_A_GLOBAL_Y (ST7789_COLUMN_SIZE-1)
+#define MLX90640_B_GLOBAL_X (ST7789_LINE_SIZE-1)
+#define MLX90640_B_GLOBAL_Y (0)
 
 /*
  * @brief In MLX90640 perspective, define (x,y) = (0,0) to be the "A" corner of
