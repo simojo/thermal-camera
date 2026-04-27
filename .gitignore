@@ -59,3 +59,7 @@ dkms.conf
 
 # kicad backups (don't want em!)
 *.zip
+# kicad derived files
+*.gbr
+*.gbrjob
+*.drl
