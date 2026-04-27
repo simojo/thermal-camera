@@ -1,4 +1,4 @@
-24402138117505143
+24548154848165981
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -6551,6 +6551,13 @@ SFP+ SFP
 0
 40
 21
+Connector
+Connector_SMD_2x01
+
+
+0
+2
+2
 Connector
 DTF13-12Px
 http://www.te.com/usa-en/product-DTF13-12PA-G003.html

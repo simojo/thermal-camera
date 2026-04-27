@@ -4889,6 +4889,16 @@
 		)
 		(uuid "701341e2-4e16-441b-b4e7-c33719193861")
 	)
+	(text "FIXME: STAT is open-drain"
+		(exclude_from_sim no)
+		(at 192.278 133.096 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "0108aac8-b4f2-4877-a2e3-cceaf30815a4")
+	)
 	(text "MLX90640"
 		(exclude_from_sim no)
 		(at 34.798 88.138 0)

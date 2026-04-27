@@ -1932,7 +1932,7 @@
 			(uuid "b165c929-a20d-4287-a776-0cef27bd6ffa")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "7d28d0d7-419e-4da5-9fd7-55dbdaf86698")
 			(effects
@@ -2001,7 +2001,7 @@
 		(descr "Through hole straight pin header, 1x02, 2.54mm pitch, single row")
 		(tags "Through hole pin header THT 1x02 2.54mm single row")
 		(property "Reference" "BT1"
-			(at 0 -2.33 360)
+			(at 0 -2.33 0)
 			(layer "F.SilkS")
 			(uuid "b45298b3-d00e-45c4-8470-df9153c85a73")
 			(effects
@@ -2012,7 +2012,7 @@
 			)
 		)
 		(property "Value" "Battery"
-			(at 0 4.87 360)
+			(at 0 4.87 0)
 			(layer "F.Fab")
 			(uuid "621f7eda-e742-4b05-a479-d056c077958b")
 			(effects
@@ -3894,7 +3894,7 @@
 		(descr "SOT, 3 Pin (https://www.jedec.org/system/files/docs/to-236h.pdf variant AB), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOT TO_SOT_SMD")
 		(property "Reference" "Q1"
-			(at 3.302 0 360)
+			(at 3.302 0 0)
 			(layer "F.SilkS")
 			(uuid "3e303863-f217-4b03-b032-51654b5eee5d")
 			(effects
@@ -3905,7 +3905,7 @@
 			)
 		)
 		(property "Value" "AO3401A"
-			(at 0 2.4 360)
+			(at 0 2.4 0)
 			(layer "F.Fab")
 			(uuid "0042c9cd-93b7-4045-ab63-21c9a2ddcf2e")
 			(effects
@@ -4102,7 +4102,7 @@
 			(uuid "f50eebc7-3aa9-4cc6-af0f-9ea096a024b9")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "6628f45b-b726-4171-a037-a93a1e1abf43")
 			(effects
@@ -4161,7 +4161,7 @@
 		(descr "Resistor SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R4"
-			(at 0 -1.82 360)
+			(at 0 -1.82 0)
 			(layer "F.SilkS")
 			(uuid "35f4ba4b-df39-4cac-a19b-5e8396da21b0")
 			(effects
@@ -4172,7 +4172,7 @@
 			)
 		)
 		(property "Value" "100k"
-			(at 0 1.82 360)
+			(at 0 1.82 0)
 			(layer "F.Fab")
 			(uuid "757b7ad9-2f30-48ac-9657-9b4965860d4b")
 			(effects
@@ -4327,7 +4327,7 @@
 			(uuid "53cbb863-8956-496d-88c6-d4d3ff1e2b0e")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "968523e6-ba3d-4a72-b763-02346cae0f2c")
 			(effects
@@ -5279,7 +5279,7 @@
 		(descr "Diode SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf), generated with kicad-footprint-generator")
 		(tags "diode")
 		(property "Reference" "D4"
-			(at 0 -2.286 360)
+			(at 0 -2.286 0)
 			(layer "F.SilkS")
 			(uuid "34a3c739-6f55-47eb-9c7a-34f1bac68721")
 			(effects
@@ -5290,7 +5290,7 @@
 			)
 		)
 		(property "Value" "D_Schottky"
-			(at 0 1.82 360)
+			(at 0 1.82 0)
 			(layer "F.Fab")
 			(uuid "ffbf57c9-79e9-4b90-a868-de4fb76bbd91")
 			(effects
@@ -5465,7 +5465,7 @@
 			(uuid "5d4f0f75-c11a-4fee-9d24-fe5becc9ddb0")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "9c530e18-2f16-4ecf-9504-92cacaa704d2")
 			(effects
@@ -5514,7 +5514,7 @@
 		(descr "Capacitor SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C2"
-			(at 0 -1.85 360)
+			(at 0 -1.85 0)
 			(layer "F.SilkS")
 			(uuid "d07e5085-0711-4ae7-994e-88549a37c927")
 			(effects
@@ -5525,7 +5525,7 @@
 			)
 		)
 		(property "Value" "1u"
-			(at 0 1.85 360)
+			(at 0 1.85 0)
 			(layer "F.Fab")
 			(uuid "31a1a103-18f9-47cd-ae47-5f6e048c5e96")
 			(effects
@@ -5680,7 +5680,7 @@
 			(uuid "d827f4b4-d4e6-44b3-a053-9446415abfbe")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "438d39b7-ede8-4a67-8aa4-e427ff8a650a")
 			(effects
